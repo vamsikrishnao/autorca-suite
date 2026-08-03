@@ -8,6 +8,11 @@ export default defineConfig({
     globals: true,
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true, // Forces sequential processing inside a single process lifecycle
+      },
+    },
     fileParallelism: false,
     maxWorkers: 1,
   },
