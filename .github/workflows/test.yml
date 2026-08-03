@@ -1,2 +1,7 @@
+- name: Set up Node.js
+  uses: actions/setup-node@v4
+  with:
+    node-version: 22 # Explicitly ensures modern native API availability (fixes markAsUncloneable)
+
 - name: Run Tests
   run: npx vitest run --logHeapUsage --trace-warnings
