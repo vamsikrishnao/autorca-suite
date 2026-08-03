@@ -7,21 +7,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    pool: 'threads',
+    pool: 'forks',
     fileParallelism: false,
-    maxConcurrency: 1,
-    server: {
-      deps: {
-        inline: [
-          '@exodus/bytes',
-          'html-encoding-sniffer',
-          'jsdom',
-          'data-urls',
-          'whatwg-url',
-          'whatwg-encoding',
-          'whatwg-mimetype',
-        ],
-      },
-    },
+    maxWorkers: 1,
   },
 });
