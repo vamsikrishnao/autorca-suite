@@ -7,8 +7,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    pool: 'vmThreads',
+    pool: 'vmThreads', 
     fileParallelism: false,
     maxWorkers: 1,
+    server: {
+      deps: {
+        inline: ['html-encoding-sniffer', '@exodus/bytes'], // Forces Vitest to pre-transform the ESM/CJS collision
+      },
+    },
   },
 });
