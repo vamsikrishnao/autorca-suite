@@ -10,5 +10,18 @@ export default defineConfig({
     pool: 'threads',
     fileParallelism: false,
     maxConcurrency: 1,
+    server: {
+      deps: {
+        inline: [
+          '@exodus/bytes',
+          'html-encoding-sniffer',
+          'jsdom',
+          'data-urls',
+          'whatwg-url',
+          'whatwg-encoding',
+          'whatwg-mimetype',
+        ],
+      },
+    },
   },
 });
