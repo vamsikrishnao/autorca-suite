@@ -1,0 +1,2 @@
+- name: Run Tests
+  run: npx vitest run --logHeapUsage --trace-warnings
