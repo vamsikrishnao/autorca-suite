@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  autorca-suite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autorca-enterprise-suite
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN:-}
+    volumes:
+      - autorca_data:/app/data
+
+volumes:
+  autorca_data:
+    driver: local

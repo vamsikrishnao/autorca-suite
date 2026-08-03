@@ -1,0 +1,6 @@
+{
+  "name": "AutoRCA & Fix Suite",
+  "description": "An open source library & workbench for automated Bug Root Cause Analysis (RCA) and loop-engineered code fixing with GitHub PRs, worktrees, sub-agents, and configurable guardrails.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
