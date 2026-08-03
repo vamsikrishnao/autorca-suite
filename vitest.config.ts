@@ -7,12 +7,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true, // Forces sequential processing inside a single process lifecycle
-      },
-    },
+    pool: 'vmThreads',
     fileParallelism: false,
     maxWorkers: 1,
   },
