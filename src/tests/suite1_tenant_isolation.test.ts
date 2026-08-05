@@ -125,7 +125,7 @@ describe('Suite 1: Multi-Tenant & Multi-Project Context Isolation (Targeted High
       return rawId.toLowerCase().replace(/[^a-z0-9-]/g, '');
     };
 
-    expect(sanitizeTenantId('Org-Acme_Corp!')).toBe('org-acme-corp');
+    expect(sanitizeTenantId('Org-Acme_Corp!')).toBe('org-acmecorp');
     expect(sanitizeTenantId('Tenant<script>')).toBe('tenantscript');
   });
 });

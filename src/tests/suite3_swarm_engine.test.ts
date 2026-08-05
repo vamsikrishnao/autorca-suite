@@ -20,7 +20,7 @@ describe('Suite 3: Autonomous Swarm Engine & Sub-Agent State Loop (Targeted High
     expect(roles).toContain('KB Retriever');
     expect(roles).toContain('Code Repair Specialist');
     expect(roles).toContain('Harness Verifier');
-    expect(roles).toContain('CI Coordinator');
+    expect(roles).toContain('CI & Draft PR Coordinator');
     expect(roles).toContain('Guardrail Auditor');
   });
 

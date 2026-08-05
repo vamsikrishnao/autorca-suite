@@ -3,7 +3,7 @@ import { defaultGitHubConfig } from '../data/defaultConfig';
 
 describe('Suite 7: GitHub Integration & Draft PR Workflow (Targeted High-Impact Functional Unit Tests)', () => {
   it('loads default GitHub configuration with repo URL and base branch', () => {
-    expect(defaultGitHubConfig.repoUrl).toBe('https://github.com/org/payment-service');
+    expect(defaultGitHubConfig.repoUrl).toBe('https://github.com/autorca-suite/example-react-backend');
     expect(defaultGitHubConfig.baseBranch).toBe('main');
   });
 

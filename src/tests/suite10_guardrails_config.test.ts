@@ -4,13 +4,13 @@ import { defaultModelConfig, defaultGuardrailConfig } from '../data/defaultConfi
 describe('Suite 10: Guardrail, Model & System Configuration Controls (Targeted High-Impact Functional Unit Tests)', () => {
   it('loads default model configuration parameters', () => {
     expect(defaultModelConfig.modelId).toBe('gemini-2.5-pro');
-    expect(defaultModelConfig.temperature).toBe(0.1);
+    expect(defaultModelConfig.temperature).toBe(0.2);
     expect(defaultModelConfig.temperature).toBeGreaterThanOrEqual(0.0);
     expect(defaultModelConfig.temperature).toBeLessThanOrEqual(1.0);
   });
 
   it('loads default guardrail budget thresholds and recipient email', () => {
-    expect(defaultGuardrailConfig.maxLoopIterations).toBe(10);
+    expect(defaultGuardrailConfig.maxLoopIterations).toBe(3);
     expect(defaultGuardrailConfig.maxTokensPerRun).toBe(500000);
     expect(defaultGuardrailConfig.maxCostUsd).toBe(15.0);
     expect(defaultGuardrailConfig.alertEmailAddress).toBe('engineering-alerts@acme.corp');
@@ -79,7 +79,7 @@ describe('Suite 10: Guardrail, Model & System Configuration Controls (Targeted H
     const jsonStr = JSON.stringify(defaultGuardrailConfig);
     const parsed = JSON.parse(jsonStr);
 
-    expect(parsed.maxLoopIterations).toBe(10);
+    expect(parsed.maxLoopIterations).toBe(3);
     expect(parsed.maxTokensPerRun).toBe(500000);
     expect(parsed.alertEmailAddress).toBe('engineering-alerts@acme.corp');
   });

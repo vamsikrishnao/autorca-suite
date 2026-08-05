@@ -5,26 +5,26 @@ import { BugItem } from '../types';
 describe('Suite 2: Bug Selector, Search & State Matrix (Targeted High-Impact Functional Unit Tests)', () => {
   it('loads default bug list with valid initial dataset', () => {
     expect(defaultBugs.length).toBeGreaterThan(0);
-    expect(defaultBugs[0].id).toBe('BUG-409');
+    expect(defaultBugs[0].id).toBe('JIRA-4892');
     expect(defaultBugs[0].status).toBe('Open');
   });
 
   it('selects target bug and extracts complete stack trace context', () => {
-    const selectedBugId = 'BUG-409';
+    const selectedBugId = 'JIRA-104';
     const bug = defaultBugs.find((b) => b.id === selectedBugId);
 
     expect(bug).toBeDefined();
-    expect(bug?.id).toBe('BUG-409');
-    expect(bug?.title).toContain('Stripe Webhook');
-    expect(bug?.stackTrace).toContain('com.acme.payment.WebhookHandler.process');
+    expect(bug?.id).toBe('JIRA-104');
+    expect(bug?.title).toContain('Stripe API timeout');
+    expect(bug?.stackTrace).toContain('com.autorca.payment.StripeClient.executeCharge');
   });
 
   it('filters bugs by exact Bug ID query', () => {
-    const query = 'BUG-512';
+    const query = 'JIRA-4892';
     const results = defaultBugs.filter((b) => b.id.toLowerCase().includes(query.toLowerCase()));
 
     expect(results.length).toBe(1);
-    expect(results[0].id).toBe('BUG-512');
+    expect(results[0].id).toBe('JIRA-4892');
   });
 
   it('filters bugs by keyword match in title', () => {

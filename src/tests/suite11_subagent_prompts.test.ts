@@ -60,7 +60,7 @@ describe('Suite 11: Sub-Agent System Prompts Registry & Customization Service (T
     currentPrompt = original.systemPrompt;
 
     expect(currentPrompt).toBe(original.systemPrompt);
-    expect(currentPrompt).toContain('MicroVM Sandbox');
+    expect(currentPrompt).toContain('MicroVM Container Sandbox');
   });
 
   it('validates sub-agent temperature setting bounds', () => {
