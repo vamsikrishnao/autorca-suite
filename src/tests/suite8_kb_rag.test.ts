@@ -6,8 +6,8 @@ describe('Suite 8: Knowledge Base Connectors & RAG Processing (Targeted High-Imp
     expect(defaultKnowledgeBases.length).toBeGreaterThan(0);
     const types = defaultKnowledgeBases.map((k) => k.type);
 
-    expect(types).toContain('Confluence Space');
-    expect(types).toContain('Support Docs PDF');
+    expect(types).toContain('Confluence');
+    expect(types).toContain('Support Article');
   });
 
   it('filters retrieved RAG context chunks by semantic relevance threshold (score >= 0.78)', () => {

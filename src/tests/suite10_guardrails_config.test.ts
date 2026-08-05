@@ -11,7 +11,7 @@ describe('Suite 10: Guardrail, Model & System Configuration Controls (Targeted H
 
   it('loads default guardrail budget thresholds and recipient email', () => {
     expect(defaultGuardrailConfig.maxLoopIterations).toBe(3);
-    expect(defaultGuardrailConfig.maxTokensPerRun).toBe(500000);
+    expect(defaultGuardrailConfig.maxTokensPerRun).toBe(15000);
     expect(defaultGuardrailConfig.maxCostUsd).toBe(15.0);
     expect(defaultGuardrailConfig.alertEmailAddress).toBe('engineering-alerts@acme.corp');
   });
@@ -51,7 +51,7 @@ describe('Suite 10: Guardrail, Model & System Configuration Controls (Targeted H
       return { tripped: false, reasons: [] };
     };
 
-    const res = checkGuardrails(520000, 16.5, 500000, 15.0);
+    const res = checkGuardrails(520000, 16.5, 15000, 15.0);
     expect(res.tripped).toBe(true);
     expect(res.reasons.length).toBe(2);
     expect(res.reasons[0]).toContain('Token limit breached');
@@ -80,7 +80,7 @@ describe('Suite 10: Guardrail, Model & System Configuration Controls (Targeted H
     const parsed = JSON.parse(jsonStr);
 
     expect(parsed.maxLoopIterations).toBe(3);
-    expect(parsed.maxTokensPerRun).toBe(500000);
+    expect(parsed.maxTokensPerRun).toBe(15000);
     expect(parsed.alertEmailAddress).toBe('engineering-alerts@acme.corp');
   });
 });
