@@ -12,8 +12,8 @@ describe('Suite 10: Guardrail, Model & System Configuration Controls (Targeted H
   it('loads default guardrail budget thresholds and recipient email', () => {
     expect(defaultGuardrailConfig.maxLoopIterations).toBe(3);
     expect(defaultGuardrailConfig.maxTokensPerRun).toBe(15000);
-    expect(defaultGuardrailConfig.maxCostUsd).toBe(15.0);
-    expect(defaultGuardrailConfig.alertEmailAddress).toBe('engineering-alerts@acme.corp');
+    expect(defaultGuardrailConfig.maxCostUsd).toBe(0.45);
+    expect(defaultGuardrailConfig.alertEmailAddress).toBe('devops-alerts@autorca.io');
   });
 
   it('clamps model temperature slider inputs strictly between 0.0 and 1.0', () => {
@@ -28,7 +28,7 @@ describe('Suite 10: Guardrail, Model & System Configuration Controls (Targeted H
   it('validates email address syntax for guardrail alert notification modal', () => {
     const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-    expect(isValidEmail('engineering-alerts@acme.corp')).toBe(true);
+    expect(isValidEmail('devops-alerts@autorca.io')).toBe(true);
     expect(isValidEmail('devops.lead@fintech.io')).toBe(true);
     expect(isValidEmail('invalid-email-string')).toBe(false);
     expect(isValidEmail('user@domain')).toBe(false);
@@ -51,7 +51,7 @@ describe('Suite 10: Guardrail, Model & System Configuration Controls (Targeted H
       return { tripped: false, reasons: [] };
     };
 
-    const res = checkGuardrails(520000, 16.5, 15000, 15.0);
+    const res = checkGuardrails(17000, 0.5, 15000, 0.45);
     expect(res.tripped).toBe(true);
     expect(res.reasons.length).toBe(2);
     expect(res.reasons[0]).toContain('Token limit breached');
