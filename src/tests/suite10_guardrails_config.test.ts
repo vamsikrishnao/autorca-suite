@@ -81,6 +81,6 @@ describe('Suite 10: Guardrail, Model & System Configuration Controls (Targeted H
 
     expect(parsed.maxLoopIterations).toBe(3);
     expect(parsed.maxTokensPerRun).toBe(15000);
-    expect(parsed.alertEmailAddress).toBe('engineering-alerts@acme.corp');
+    expect(parsed.alertEmailAddress).toBe('devops-alerts@autorca.io');
   });
 });
