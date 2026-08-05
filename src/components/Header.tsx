@@ -9,8 +9,11 @@ import {
   PackageCheck,
   Zap,
   Play,
+  Building2,
+  FolderGit2,
+  Sparkles,
 } from 'lucide-react';
-import { ModelConfig, GuardrailConfig } from '../types';
+import { ModelConfig, GuardrailConfig, TenantContext } from '../types';
 import { I18N } from '../config/i18n';
 
 interface HeaderProps {
@@ -23,6 +26,8 @@ interface HeaderProps {
   onTestGuardrailAlert: () => void;
   onRunHarness?: () => void;
   isRunning?: boolean;
+  tenantContext?: TenantContext;
+  onTenantChange?: (tenantId: string, projectId: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -35,6 +40,13 @@ export const Header: React.FC<HeaderProps> = ({
   onTestGuardrailAlert,
   onRunHarness,
   isRunning = false,
+  tenantContext = {
+    tenantId: 'org-acme-corp',
+    teamId: 'team-payments',
+    projectId: 'proj-autorca-suite',
+    userId: 'user-engineer-1',
+  },
+  onTenantChange,
 }) => {
   const tokenPercentage = Math.min(
     100,
@@ -47,6 +59,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'loop', label: I18N.navTabs.loopControl, icon: Zap },
     { id: 'prereqs', label: I18N.navTabs.kbAndBugTracker, icon: Database },
     { id: 'github', label: I18N.navTabs.githubPluginAndCi, icon: GitBranch },
+    { id: 'prompts', label: 'Sub-Agent Prompts', icon: Sparkles },
     { id: 'guardrails', label: I18N.navTabs.modelsAndGuardrails, icon: ShieldAlert },
     { id: 'framework', label: I18N.navTabs.agentsAndSkills, icon: BookOpen },
     { id: 'library', label: I18N.navTabs.openSourceSdk, icon: PackageCheck },
@@ -73,6 +86,43 @@ export const Header: React.FC<HeaderProps> = ({
               {I18N.headerBar.subtitle}
             </p>
           </div>
+        </div>
+
+        {/* Multi-Tenant Organization & Project Context Selector */}
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold">
+            <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+            <select
+              value={tenantContext.tenantId}
+              onChange={(e) => onTenantChange && onTenantChange(e.target.value, tenantContext.projectId)}
+              className="bg-transparent border-none text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+            >
+              <option value="org-acme-corp">Acme Corp [Org-101]</option>
+              <option value="org-fintech-global">FinTech Global [Org-202]</option>
+            </select>
+          </div>
+          <span className="text-slate-300">|</span>
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold">
+            <FolderGit2 className="w-3.5 h-3.5 text-emerald-600" />
+            <select
+              value={tenantContext.projectId}
+              onChange={(e) => onTenantChange && onTenantChange(tenantContext.tenantId, e.target.value)}
+              className="bg-transparent border-none text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+            >
+              {tenantContext.tenantId === 'org-acme-corp' ? (
+                <>
+                  <option value="proj-autorca-suite">autorca-suite</option>
+                  <option value="proj-payment-gateway">payment-gateway-v2</option>
+                  <option value="proj-ios-app">acme-mobile-ios</option>
+                </>
+              ) : (
+                <option value="proj-fraud-detection">fraud-detection-engine</option>
+              )}
+            </select>
+          </div>
+          <span className="ml-1 text-[10px] bg-indigo-100 text-indigo-700 font-mono px-1.5 py-0.5 rounded">
+            Tenant Isolated
+          </span>
         </div>
 
         {/* Right Session Token Burn & Harness Action */}

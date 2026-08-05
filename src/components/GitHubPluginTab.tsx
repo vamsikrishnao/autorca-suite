@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   GitBranch,
   GitPullRequest,
@@ -11,8 +11,12 @@ import {
   Layers,
   FileCode,
   KeyRound,
+  Server,
+  Zap,
+  HardDrive,
+  Trash2,
 } from 'lucide-react';
-import { GitHubPluginConfig, WorktreeState, DraftPrResult } from '../types';
+import { GitHubPluginConfig, WorktreeState, DraftPrResult, WorkerPoolMetrics } from '../types';
 
 interface GitHubPluginTabProps {
   githubConfig: GitHubPluginConfig;
@@ -31,6 +35,67 @@ export const GitHubPluginTab: React.FC<GitHubPluginTabProps> = ({
 }) => {
   const [isValidatingToken, setIsValidatingToken] = useState(false);
   const [validationMsg, setValidationMsg] = useState<{ success: boolean; text: string } | null>(null);
+
+  // Worker Pool State for Decoupled Runner Architecture
+  const [workerPool, setWorkerPool] = useState<WorkerPoolMetrics | null>(null);
+  const [isDispatchingWorker, setIsDispatchingWorker] = useState(false);
+  const [dispatchResultMsg, setDispatchResultMsg] = useState<string | null>(null);
+
+  const fetchWorkerPoolMetrics = () => {
+    fetch('/api/worktree/runners')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && data.pool) {
+          setWorkerPool(data.pool);
+        }
+      })
+      .catch((err) => console.warn('Failed to fetch worker pool metrics:', err));
+  };
+
+  useEffect(() => {
+    fetchWorkerPoolMetrics();
+  }, []);
+
+  const handleDispatchWorkerJob = async () => {
+    setIsDispatchingWorker(true);
+    setDispatchResultMsg(null);
+    try {
+      const res = await fetch('/api/worktree/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bugId: 'JIRA-4892',
+          repoUrl: `https://github.com/${githubConfig.repository}`,
+          branchName: `autorca/fix-jira-4892`,
+          harnessCommand: 'npm test',
+        }),
+      });
+      const data = await res.json();
+      if (data?.success && data.job) {
+        setDispatchResultMsg(`Dispatched to ${data.job.podId} (${data.job.cpuQuota}, ${data.job.memoryQuota}, GIT_INDEX_FILE Isolated)`);
+        fetchWorkerPoolMetrics();
+      } else {
+        setDispatchResultMsg(data.error || 'Worker dispatch failed');
+      }
+    } catch (err: any) {
+      setDispatchResultMsg('Network Error dispatching worker job');
+    } finally {
+      setIsDispatchingWorker(false);
+    }
+  };
+
+  const handleCleanupWorkspaces = async () => {
+    try {
+      const res = await fetch('/api/worktree/cleanup', { method: 'POST' });
+      const data = await res.json();
+      if (data?.success) {
+        setDispatchResultMsg(data.message);
+        fetchWorkerPoolMetrics();
+      }
+    } catch (err: any) {
+      console.warn('Cleanup failed:', err);
+    }
+  };
 
   const handleTestGithubToken = () => {
     setIsValidatingToken(true);
@@ -71,7 +136,7 @@ export const GitHubPluginTab: React.FC<GitHubPluginTabProps> = ({
             <div className="flex items-center gap-2">
               <GitBranch className="w-5 h-5 text-indigo-600" />
               <h2 className="text-base font-bold text-slate-800 uppercase tracking-tight">
-                4. GitHub Versioning Tool Plugin &amp; Worktree Automation
+                GitHub Versioning Tool Plugin &amp; Worktree Automation
               </h2>
             </div>
             <p className="text-xs text-slate-500 mt-1">
@@ -215,6 +280,101 @@ export const GitHubPluginTab: React.FC<GitHubPluginTabProps> = ({
             <GitPullRequest className="w-4 h-4 text-emerald-400" />
             <span>Simulate Draft PR Creation</span>
           </button>
+        </div>
+      </div>
+
+      {/* SECTION: Decoupled Ephemeral Worker Runner Pool & Sandboxing Status */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-md text-white space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <Server className="w-5 h-5 text-indigo-400" />
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                Decoupled Ephemeral Worker Runner Pool
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                Isolated K8s Runner Pods &amp; MicroVM Sandboxes for 500-User Scale Parallel Fix Loops
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded font-bold uppercase">
+            Git Index Lock Protection: Active
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-mono">
+          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
+            <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+              <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Worker Capacity</span>
+            </div>
+            <div className="text-lg font-black text-indigo-300">
+              {workerPool ? `${workerPool.availableWorkersCount}/${workerPool.maxCapacityWorkers}` : '50/50'} Pods
+            </div>
+            <div className="text-[10px] text-slate-500">Auto-scalable to 500+</div>
+          </div>
+
+          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
+            <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Index Lock Shield</span>
+            </div>
+            <div className="text-xs font-bold text-emerald-400 truncate">
+              GIT_INDEX_FILE Isolated
+            </div>
+            <div className="text-[10px] text-slate-500">Zero .git/index.lock Collisions</div>
+          </div>
+
+          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
+            <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+              <HardDrive className="w-3.5 h-3.5 text-amber-400" />
+              <span>Quota per Worker Pod</span>
+            </div>
+            <div className="text-xs font-bold text-amber-300">
+              2 vCPU | 4GB RAM | 10GB Disk
+            </div>
+            <div className="text-[10px] text-slate-500">Strict CGroups Limits</div>
+          </div>
+
+          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
+            <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+              <Trash2 className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Workspace TTL</span>
+            </div>
+            <div className="text-xs font-bold text-cyan-300">
+              30m Auto-Prune GC
+            </div>
+            <div className="text-[10px] text-slate-500">Disk Exhaustion Guard</div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleDispatchWorkerJob}
+              disabled={isDispatchingWorker}
+              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white rounded text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-300" />
+              <span>{isDispatchingWorker ? 'Provisioning Pod...' : 'Test Ephemeral Worker Pod Dispatch'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCleanupWorkspaces}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>Trigger Workspace Garbage Collection</span>
+            </button>
+          </div>
+
+          {dispatchResultMsg && (
+            <span className="text-xs font-mono text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded border border-emerald-800/50">
+              {dispatchResultMsg}
+            </span>
+          )}
         </div>
       </div>
 

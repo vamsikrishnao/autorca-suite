@@ -1,5 +1,40 @@
 export type BugPlatform = 'Jira' | 'Freshrelease' | 'Zoho Sprints' | 'CSV Upload';
 
+export interface TenantInfo {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface TeamInfo {
+  id: string;
+  name: string;
+  tenantId: string;
+}
+
+export interface ProjectInfo {
+  id: string;
+  name: string;
+  teamId: string;
+  tenantId: string;
+}
+
+export interface TenantContext {
+  tenantId: string;
+  teamId: string;
+  projectId: string;
+  userId: string;
+}
+
+export interface MultiTenantMetaData {
+  tenantId: string;
+  teamId: string;
+  projectId: string;
+  version: number;
+  updatedAt: string;
+  updatedBy?: string;
+}
+
 export interface StructuredNote {
   timestamp: string;
   author: string;
@@ -144,11 +179,46 @@ export interface LoopIteration {
   timestamp: string;
 }
 
+export interface WorkerPodInfo {
+  jobId: string;
+  podId: string;
+  bugId: string;
+  workspacePath: string;
+  indexLockIsolated: boolean;
+  cpuQuota: string;
+  memoryQuota: string;
+  diskLimitMb: number;
+  status: 'PENDING' | 'RUNNING' | 'HARNESS_PASSED' | 'COMPLETED' | 'FAILED';
+  createdAt: string;
+  ttlExpiresAt: string;
+  logs: string[];
+}
+
+export interface WorkerPoolMetrics {
+  architecture: string;
+  maxCapacityWorkers: number;
+  activeWorkersCount: number;
+  availableWorkersCount: number;
+  gitIndexLockProtection: string;
+  resourceLimitsPerWorker: {
+    cpu: string;
+    memory: string;
+    ephemeralDisk: string;
+    ttlMinutes: number;
+  };
+  totalJobsProcessed: number;
+  garbageCollection: {
+    status: string;
+    lastRun: string;
+  };
+}
+
 export interface WorktreeState {
   worktreeId: string;
   branchName: string;
   baseCommit: string;
   status: 'Clean' | 'Modified' | 'Staged' | 'PR Created';
+  workerPod?: WorkerPodInfo;
   filesChanged: {
     filename: string;
     oldContent: string;
@@ -203,6 +273,18 @@ export interface AgentsMdDoc {
   title: string;
   description: string;
   content: string;
+}
+
+export interface SiemAuditEvent {
+  id: string;
+  timestamp: string;
+  tenantId: string;
+  action: string;
+  bugId: string;
+  jobId?: string;
+  checksum: string;
+  status: string;
+  actor: string;
 }
 
 export interface SkillsMdDoc {

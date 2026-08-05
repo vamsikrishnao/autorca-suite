@@ -12,6 +12,7 @@ import {
   AgentsMdDoc,
   SkillsMdDoc,
   TrackerConfig,
+  TenantContext,
 } from './types';
 import {
   defaultBugs,
@@ -36,10 +37,11 @@ import { GuardrailsTab } from './components/GuardrailsTab';
 import { FrameworkTab } from './components/FrameworkTab';
 import { LibraryExportTab } from './components/LibraryExportTab';
 import { EmailAlertModal } from './components/EmailAlertModal';
+import { SubAgentPromptsTab } from './components/SubAgentPromptsTab';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<
-    'loop' | 'prereqs' | 'github' | 'guardrails' | 'framework' | 'library'
+    'loop' | 'prereqs' | 'github' | 'prompts' | 'guardrails' | 'framework' | 'library'
   >('loop');
 
   // Core configuration & domain states
@@ -82,19 +84,37 @@ export default function App() {
   const [emailModalOpen, setEmailModalOpen] = useState<boolean>(false);
   const [emailModalReason, setEmailModalReason] = useState<string>('');
 
+  // Multi-tenant organization and project context
+  const [tenantContext, setTenantContext] = useState<TenantContext>({
+    tenantId: 'org-acme-corp',
+    teamId: 'team-payments',
+    projectId: 'proj-autorca-suite',
+    userId: 'user-engineer-1',
+  });
+  const [serverVersion, setServerVersion] = useState<number>(1);
+
   // Total calculated token & cost metrics
   const totalTokensBurnt = logs.reduce((acc, l) => acc + (l.tokensBurnt.total || 0), 0);
   const totalCostUsd = totalTokensBurnt * 0.0000032;
 
   const isLoadedFromBackend = useRef(false);
 
-  // Load saved backend configuration on startup
-  useEffect(() => {
-    fetch('/api/config')
+  // Load saved tenant-scoped & project-scoped backend configuration
+  const loadBackendConfig = (tContext: TenantContext) => {
+    isLoadedFromBackend.current = false;
+    fetch(`/api/config?tenantId=${tContext.tenantId}&projectId=${tContext.projectId}`, {
+      headers: {
+        'x-tenant-id': tContext.tenantId,
+        'x-project-id': tContext.projectId,
+        'x-team-id': tContext.teamId,
+        'x-user-id': tContext.userId,
+      },
+    })
       .then((res) => res.json())
       .then((data) => {
         if (data?.success && data.config) {
           const cfg = data.config;
+          if (cfg.version) setServerVersion(cfg.version);
           if (cfg.bugs) setBugs(cfg.bugs);
           if (cfg.knowledgeBases) setKnowledgeBases(cfg.knowledgeBases);
           if (cfg.trackerConfig) setTrackerConfig(cfg.trackerConfig);
@@ -109,16 +129,31 @@ export default function App() {
         console.warn('Backend config load fallback:', err);
         isLoadedFromBackend.current = true;
       });
-  }, []);
+  };
 
-  // Persist configurations to backend store whenever they change
+  useEffect(() => {
+    loadBackendConfig(tenantContext);
+  }, [tenantContext.tenantId, tenantContext.projectId]);
+
+  // Persist configurations to backend store whenever they change with Optimistic Concurrency Control
   useEffect(() => {
     if (!isLoadedFromBackend.current) return;
     const saveTimer = setTimeout(() => {
       fetch('/api/config', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tenant-id': tenantContext.tenantId,
+          'x-project-id': tenantContext.projectId,
+          'x-team-id': tenantContext.teamId,
+          'x-user-id': tenantContext.userId,
+        },
         body: JSON.stringify({
+          tenantId: tenantContext.tenantId,
+          projectId: tenantContext.projectId,
+          teamId: tenantContext.teamId,
+          userId: tenantContext.userId,
+          version: serverVersion,
           bugs,
           knowledgeBases,
           trackerConfig,
@@ -127,10 +162,39 @@ export default function App() {
           modelConfig,
           guardrailConfig,
         }),
-      }).catch((e) => console.warn('Failed to save backend config:', e));
+      })
+        .then(async (res) => {
+          if (res.status === 409) {
+            const errData = await res.json();
+            console.warn('Concurrency Conflict Detected:', errData.error);
+            // Add audit log for optimistic concurrency conflict
+            setLogs((prev) => [
+              {
+                id: `LOG-${Date.now()}`,
+                timestamp: new Date().toLocaleTimeString(),
+                subAgent: 'Guardrail Auditor',
+                action: 'CONCURRENCY_CONFLICT_PREVENTED',
+                message: errData.error || 'Concurrent write conflict detected. Re-syncing state from backend...',
+                tokensBurnt: { input: 0, output: 0, total: 0 },
+                status: 'WARNING',
+              },
+              ...prev,
+            ]);
+            // Re-sync backend state to handle concurrent write safely
+            loadBackendConfig(tenantContext);
+            return;
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (data?.success && data.version) {
+            setServerVersion(data.version);
+          }
+        })
+        .catch((e) => console.warn('Failed to save backend config:', e));
     }, 800);
     return () => clearTimeout(saveTimer);
-  }, [bugs, knowledgeBases, trackerConfig, testHarness, gitHubConfig, modelConfig, guardrailConfig]);
+  }, [bugs, knowledgeBases, trackerConfig, testHarness, gitHubConfig, modelConfig, guardrailConfig, tenantContext, serverVersion]);
 
   // Handler: Add structured note to a bug
   const handleAddStructuredNote = (
@@ -344,6 +408,15 @@ export default function App() {
           setEmailModalOpen(true);
         }}
         isRunning={isLoopRunning}
+        tenantContext={tenantContext}
+        onTenantChange={(tenantId, projectId) => {
+          setTenantContext({
+            tenantId,
+            teamId: tenantId === 'org-acme-corp' ? 'team-payments' : 'team-risk',
+            projectId,
+            userId: 'user-engineer-1',
+          });
+        }}
       />
 
       {/* Main Container */}
@@ -411,6 +484,8 @@ export default function App() {
             onTestCreateDraftPr={() => handleTriggerDraftPR(selectedBugId)}
           />
         )}
+
+        {activeTab === 'prompts' && <SubAgentPromptsTab />}
 
         {activeTab === 'guardrails' && (
           <GuardrailsTab

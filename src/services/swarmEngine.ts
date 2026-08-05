@@ -1,9 +1,8 @@
 /**
  * Autonomous Swarm Execution Engine & Token Budget Calculator
  *
- * Answers: "How did you come up with Tokens values? Is it gonna be constant whenever that agent runs?"
  *
- * 1. HOW INITIAL TOKEN VALUES WERE DERIVED:
+ * - HOW INITIAL TOKEN VALUES WERE DERIVED:
  *    - Baseline token counts represent the average prompt + output tokens consumed by an LLM sub-agent
  *      executing its role in an AutoRCA workflow:
  *      * RCA Analyst (420 tokens): Analyzes stack traces, code context, and error messages.
@@ -13,8 +12,7 @@
  *      * Harness Verifier (190 tokens): Parses test runner stdout/stderr and verifies Exit Code 0.
  *      * CI Coordinator (230 tokens): Formats Markdown PR descriptions and checks GitHub Actions CI APIs.
  *
- * 2. ARE TOKENS CONSTANT WHENEVER THAT AGENT RUNS?
- *    - No, in a production LLM deployment, token usage is DYNAMIC.
+ *    - In a production LLM deployment, token usage is DYNAMIC.
  *    - It varies based on:
  *      * Stack trace length & number of files inspected.
  *      * Number of knowledge base chunks retrieved.

@@ -90,31 +90,21 @@ export const BugSelectorBar: React.FC<BugSelectorBarProps> = ({
             </div>
           ) : (
             <div className="flex items-center gap-1.5 flex-wrap">
-              {displayBugs.slice(0, 4).map((bug) => {
-                const isSelected = bug.id === selectedBug.id;
-                return (
-                  <button
-                    key={bug.id}
-                    onClick={() => onSelectBug(bug.id)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 ${
-                      isSelected
-                        ? 'bg-slate-900 text-white shadow-xs'
-                        : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="font-mono">{bug.id}</span>
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        bug.severity === 'Critical'
-                          ? 'bg-rose-500'
-                          : bug.severity === 'High'
-                          ? 'bg-amber-500'
-                          : 'bg-indigo-500'
-                      }`}
-                    />
-                  </button>
-                );
-              })}
+              {/* Only the currently selected bug badge is displayed */}
+              <div
+                className="px-3 py-1.5 rounded-md text-xs font-bold bg-slate-900 text-white shadow-xs flex items-center gap-1.5"
+              >
+                <span className="font-mono">{selectedBug.id}</span>
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    selectedBug.severity === 'Critical'
+                      ? 'bg-rose-500'
+                      : selectedBug.severity === 'High'
+                      ? 'bg-amber-500'
+                      : 'bg-indigo-500'
+                  }`}
+                />
+              </div>
 
               {/* Extensible Search & Pick Dropdown */}
               <div className="relative">

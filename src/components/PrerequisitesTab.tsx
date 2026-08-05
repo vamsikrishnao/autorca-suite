@@ -259,7 +259,7 @@ export const PrerequisitesTab: React.FC<PrerequisitesTabProps> = ({
           <div>
             <h2 className="text-base font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
               <Database className="w-5 h-5 text-indigo-600" />
-              <span>1. Knowledge Base Connectors &amp; Custom Input Files</span>
+              <span>Knowledge Base Connectors &amp; Custom Input Files</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Connect Confluence URLs, Support article folders, custom PDF documents, or JSON rules for Sub-Agent RAG grounding.
@@ -430,7 +430,7 @@ export const PrerequisitesTab: React.FC<PrerequisitesTabProps> = ({
           <div className="border-b border-slate-100 pb-3">
             <h2 className="text-base font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
               <Globe className="w-5 h-5 text-indigo-600" />
-              <span>2. Bug Tracker Platform Integration</span>
+              <span>Bug Tracker Platform Integration</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Select your platform (Jira, Freshrelease, Zoho Sprints, or predetermined CSV format).
@@ -730,7 +730,7 @@ export const PrerequisitesTab: React.FC<PrerequisitesTabProps> = ({
             <div>
               <h2 className="text-base font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
                 <FileText className="w-5 h-5 text-indigo-600" />
-                <span>3. RCA Analysis Note Template</span>
+                <span>RCA Analysis Note Template</span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Format string posted directly into Jira / Freshrelease / Zoho Sprints comment thread.

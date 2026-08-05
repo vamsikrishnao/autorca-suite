@@ -1,4 +1,5 @@
 import React from 'react';
+import { Radio, Wifi } from 'lucide-react';
 import { LogEntry } from '../../types';
 
 export interface LogStreamViewerProps {
@@ -24,6 +25,15 @@ export const LogStreamViewer: React.FC<LogStreamViewerProps> = ({ logs, isRunnin
 
   return (
     <div className="flex-1 p-4 font-mono text-[11px] text-slate-300 space-y-2 overflow-y-auto max-h-[480px]">
+      {/* SSE Streaming Event-Driven Orchestration Banner */}
+      <div className="mb-3 p-2 bg-slate-900 border border-slate-800 rounded-md flex items-center justify-between text-[10px]">
+        <div className="flex items-center gap-1.5 text-slate-300 font-bold">
+          <Radio className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+          <span>Server-Sent Events (SSE) Stream Streamer: Connected</span>
+        </div>
+        <span className="text-emerald-400 font-mono font-bold">Durable Background Execution Active</span>
+      </div>
+
       {logs.length === 0 ? (
         <div className="text-slate-500 italic flex items-center justify-center h-48">
           Click "RUN AUTORCA &amp; FIX" to initiate the autonomous engineering loop...
