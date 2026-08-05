@@ -57,11 +57,23 @@ docker-compose up -d --build
 ```
 The container runs an optimized production server binding to `0.0.0.0:3000` behind Nginx, ready for Google Cloud Run, AWS ECS, or Kubernetes deployment.
 
+### C. Step-by-Step Workbench Workflow
+1. **Connect Integrations** (*Tab: KB & Bug Tracker*):
+   * Enter your Jira/Freshrelease project key and credentials.
+   * Attach relevant Confluence documentation or PDF architectural guides.
+2. **Configure Swarm Engine** (*Tab: Models & Guardrails*):
+   * Choose your preferred LLM engine (`gemini-2.5-pro`, `gemini-2.5-flash`, etc.) and set swarm temperature.
+   * Configure hard token burn limits and email alert recipients for guardrail violations.
+3. **Select or Create Target Issue** (*Tab: Loop Control*):
+   * Click **Search Issues...** to pick an existing Jira/Freshrelease bug, OR check **Manual Issue Mode** to type a custom title and reproduction steps.
+4. **Run Autonomous Loop**:
+   * Click **RUN AUTORCA & FIX**. Watch the multi-agent swarm execute in real time across **SYSTEM_LOG_STREAM**, **WORKTREE_DIFF**, and **RCA NOTE & DRAFT PR** tabs.
+
 ---
 
 ## 4. Security Guardrails & Zero Data-Leakage Architecture
 
-AutoRCA is engineered with a Defense-in-Depth security model:
+A primary concern for engineering leaders is preventing proprietary source code from leaking into public AI training sets or unauthorized external servers. **AutoRCA is engineered with a Defense-in-Depth security model:**
 
 ```
 +---------------------------------------------------------------------------------+
@@ -80,10 +92,21 @@ AutoRCA is engineered with a Defense-in-Depth security model:
 +---------------------------------------------------------------------------------+
 ```
 
-1. **Server-Side API Proxying**: Credentials (`GEMINI_API_KEY`, `GITHUB_PERSONAL_ACCESS_TOKEN`, Jira API tokens) are strictly server-side (`/api/*`). Secrets are never transmitted to browser bundles.
-2. **Ephemeral Git Worktree Sandboxing**: Every repair attempt creates a temporary, isolated worktree (`autorca/fix-<issue_id>`).
-3. **Configurable Budget & Recursion Caps**: Hard token burn limits and automated alert notifications prevent runaway recursion.
-4. **Human-in-the-Loop Supervised PR Gating**: Draft Pull Requests require explicit human review and approval before merging.
+### 1. Zero Public Code Leakage & Tenant Isolation
+* **Server-Side API Proxying**: All API calls and credentials (`GEMINI_API_KEY`, `GITHUB_PERSONAL_ACCESS_TOKEN`, Jira API tokens) are managed strictly server-side (`/api/*`). Secrets are never transmitted to or exposed in browser bundles.
+* **Zero Data Retention Agreements**: When paired with enterprise model endpoints (Google Cloud Vertex AI / Gemini Enterprise), prompts and generated patches are explicitly excluded from model training pipelines.
+
+### 2. Ephemeral Git Worktree Sandboxing
+* The agent swarm is **strictly forbidden** from committing directly to default branches (`main`, `master`, `production`).
+* Every repair attempt creates a temporary, isolated worktree (`autorca/fix-<issue_id>`). If a patch fails validation or exceeds iteration limits, the worktree is automatically garbage-collected without modifying developer workspaces.
+
+### 3. Configurable Budget & Recursion Caps
+* **Hard Token Burn Limits**: If an autonomous loop reaches the configured token threshold (e.g., `45,000` tokens), execution halts immediately.
+* **Automated Guardrail Email Alerts**: Enterprise administrators receive instant notifications with diagnostic snapshots if a sub-agent triggers an iteration loop or token ceiling.
+
+### 4. Human-in-the-Loop Supervised PR Gating
+* AutoRCA operates in **Supervised Draft PR Mode**. The swarm cannot merge code automatically.
+* All synthesized patches are emitted as **Draft Pull Requests** containing full RCA explanations and diff previews, requiring explicit human peer review and approval before merging.
 
 ---
 
@@ -103,9 +126,9 @@ AutoRCA includes a full automated test suite verifying all services, sub-agents,
   npm run test:ci
   ```
 
----
+<!-- --- -->
 
-## 6. Overall Code Coverage & Functional Test Matrix
+<!-- ## 6. Overall Code Coverage & Functional Test Matrix
 
 | Coverage Dimension | Metric | Covered / Total | Threshold Gate |
 | :--- | :---: | :---: | :---: |
@@ -128,11 +151,11 @@ AutoRCA includes a full automated test suite verifying all services, sub-agents,
 | **KB Connectors & RAG Processing** | Chunking Engine & Score Thresholds | **91.0%** | Passed ✅ |
 | **SIEM Audit Pipeline** | SHA-256 Cryptographic Log Generator | **100.0%** | Passed ✅ |
 | **Guardrails & System Controls** | Budget Limits, Temp Clamping & Alerts | **97.0%** | Passed ✅ |
-| **Sub-Agent System Prompts** | `src/prompts/agentSystemPrompts.ts` | **98.5%** | Passed ✅ |
+| **Sub-Agent System Prompts** | `src/prompts/agentSystemPrompts.ts` | **98.5%** | Passed ✅ | -->
 
----
+<!-- --- -->
 
-## 7. Test Case Addition Guardrails
+## 6. Test Case Addition Guardrails
 
 To prevent regression risks and maintain code quality, the repository enforces three strict automated guardrails on every pull request and commit:
 
