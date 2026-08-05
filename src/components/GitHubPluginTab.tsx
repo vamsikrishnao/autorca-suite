@@ -17,6 +17,9 @@ import {
   Trash2,
 } from 'lucide-react';
 import { GitHubPluginConfig, WorktreeState, DraftPrResult, WorkerPoolMetrics } from '../types';
+import { validatePatToken, maskSecretToken } from '../utils/connectors';
+import { formatPrBranchName, generateDraftPrMarkdown } from '../utils/github';
+import { calculatePoolUtilization, getPodIndexFilePath } from '../utils/workerPool';
 
 interface GitHubPluginTabProps {
   githubConfig: GitHubPluginConfig;
@@ -59,6 +62,7 @@ export const GitHubPluginTab: React.FC<GitHubPluginTabProps> = ({
   const handleDispatchWorkerJob = async () => {
     setIsDispatchingWorker(true);
     setDispatchResultMsg(null);
+    const branchName = formatPrBranchName('JIRA-4892');
     try {
       const res = await fetch('/api/worktree/dispatch', {
         method: 'POST',
@@ -66,13 +70,14 @@ export const GitHubPluginTab: React.FC<GitHubPluginTabProps> = ({
         body: JSON.stringify({
           bugId: 'JIRA-4892',
           repoUrl: `https://github.com/${githubConfig.repository}`,
-          branchName: `autorca/fix-jira-4892`,
+          branchName,
           harnessCommand: 'npm test',
         }),
       });
       const data = await res.json();
       if (data?.success && data.job) {
-        setDispatchResultMsg(`Dispatched to ${data.job.podId} (${data.job.cpuQuota}, ${data.job.memoryQuota}, GIT_INDEX_FILE Isolated)`);
+        const indexPath = getPodIndexFilePath(data.job.podId || 'pod-default');
+        setDispatchResultMsg(`Dispatched to ${data.job.podId} (Index: ${indexPath})`);
         fetchWorkerPoolMetrics();
       } else {
         setDispatchResultMsg(data.error || 'Worker dispatch failed');
@@ -104,25 +109,21 @@ export const GitHubPluginTab: React.FC<GitHubPluginTabProps> = ({
       setIsValidatingToken(false);
       const token = (githubConfig.personalAccessToken || '').trim();
       const repo = (githubConfig.repository || '').trim();
-      if (!token) {
+      const patCheck = validatePatToken(token);
+      if (!patCheck.valid) {
         setValidationMsg({
           success: false,
-          text: 'PAT is empty. Provide a valid GitHub Personal Access Token (ghp_*** or github_pat_***).',
+          text: `PAT Error: ${patCheck.message}`,
         });
       } else if (!repo || !repo.includes('/')) {
         setValidationMsg({
           success: false,
           text: 'Please specify repository in "owner/repo" format.',
         });
-      } else if (token.length < 15) {
-        setValidationMsg({
-          success: false,
-          text: 'Token format appears invalid (too short). Ensure token has repo & workflow scopes.',
-        });
       } else {
         setValidationMsg({
           success: true,
-          text: `✓ Authenticated successfully. Repository '${repo}' read/write access and workflow scopes verified.`,
+          text: `✓ Authenticated successfully with token ${maskSecretToken(token)}. Repository '${repo}' read/write access verified.`,
         });
       }
     }, 600);

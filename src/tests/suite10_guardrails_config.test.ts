@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { defaultModelConfig, defaultGuardrailConfig } from '../data/defaultConfig';
+import {
+  clampTemperature,
+  validateAlertEmail,
+  checkGuardrails,
+  AUTO_SAVE_DEBOUNCE_MS,
+} from '../utils/guardrails';
 
 describe('Suite 10: Guardrail, Model & System Configuration Controls (Targeted High-Impact Functional Unit Tests)', () => {
   it('loads default model configuration parameters', () => {
@@ -16,41 +22,21 @@ describe('Suite 10: Guardrail, Model & System Configuration Controls (Targeted H
     expect(defaultGuardrailConfig.alertEmailAddress).toBe('devops-alerts@autorca.io');
   });
 
-  it('clamps model temperature slider inputs strictly between 0.0 and 1.0', () => {
-    const clampTemperature = (val: number) => Number(Math.max(0.0, Math.min(1.0, val)).toFixed(2));
-
+  it('clamps model temperature slider inputs using exported clampTemperature utility', () => {
     expect(clampTemperature(0.2)).toBe(0.2);
     expect(clampTemperature(1.5)).toBe(1.0);
     expect(clampTemperature(-0.5)).toBe(0.0);
     expect(clampTemperature(0.75)).toBe(0.75);
   });
 
-  it('validates email address syntax for guardrail alert notification modal', () => {
-    const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-    expect(isValidEmail('devops-alerts@autorca.io')).toBe(true);
-    expect(isValidEmail('devops.lead@fintech.io')).toBe(true);
-    expect(isValidEmail('invalid-email-string')).toBe(false);
-    expect(isValidEmail('user@domain')).toBe(false);
+  it('validates email address syntax using exported validateAlertEmail utility', () => {
+    expect(validateAlertEmail('devops-alerts@autorca.io')).toBe(true);
+    expect(validateAlertEmail('devops.lead@fintech.io')).toBe(true);
+    expect(validateAlertEmail('invalid-email-string')).toBe(false);
+    expect(validateAlertEmail('user@domain')).toBe(false);
   });
 
-  it('triggers guardrail breach alert payload when token usage or cost exceeds budget', () => {
-    const checkGuardrails = (tokens: number, cost: number, maxTokens: number, maxCost: number) => {
-      const tokenBreach = tokens > maxTokens;
-      const costBreach = cost > maxCost;
-
-      if (tokenBreach || costBreach) {
-        return {
-          tripped: true,
-          reasons: [
-            ...(tokenBreach ? [`Token limit breached: ${tokens} > ${maxTokens}`] : []),
-            ...(costBreach ? [`Cost limit breached: $${cost} > $${maxCost}`] : []),
-          ],
-        };
-      }
-      return { tripped: false, reasons: [] };
-    };
-
+  it('triggers guardrail breach alert payload using exported checkGuardrails utility', () => {
     const res = checkGuardrails(17000, 0.5, 15000, 0.45);
     expect(res.tripped).toBe(true);
     expect(res.reasons.length).toBe(2);
@@ -70,9 +56,8 @@ describe('Suite 10: Guardrail, Model & System Configuration Controls (Targeted H
     expect(config.modelId).toBe('gemini-2.5-pro');
   });
 
-  it('validates configuration auto-save debounce delay timer (800ms)', () => {
-    const debounceDelayMs = 800;
-    expect(debounceDelayMs).toBe(800);
+  it('validates configuration auto-save debounce delay timer using exported AUTO_SAVE_DEBOUNCE_MS constant', () => {
+    expect(AUTO_SAVE_DEBOUNCE_MS).toBe(800);
   });
 
   it('serializes guardrail configuration to JSON string for persistent storage', () => {

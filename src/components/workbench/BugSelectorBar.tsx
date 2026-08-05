@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Bug, Search, ChevronDown, X, Play, RotateCcw } from 'lucide-react';
 import { BugItem, TrackerConfig } from '../../types';
 import { I18N } from '../../config/i18n';
+import { filterBugsByQuery, getSeverityBadgeClass } from '../../utils/bugs';
 
 export interface BugSelectorBarProps {
   bugs: BugItem[];
@@ -30,16 +31,7 @@ export const BugSelectorBar: React.FC<BugSelectorBarProps> = ({
   const [remoteQuerySuccess, setRemoteQuerySuccess] = useState<string | null>(null);
 
   const displayBugs = bugs;
-  const filteredSearchBugs = displayBugs.filter((bug) => {
-    const q = bugSearchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      bug.id.toLowerCase().includes(q) ||
-      bug.title.toLowerCase().includes(q) ||
-      (bug.assignee && bug.assignee.toLowerCase().includes(q)) ||
-      bug.severity.toLowerCase().includes(q)
-    );
-  });
+  const filteredSearchBugs = filterBugsByQuery(displayBugs, bugSearchQuery);
 
   const handleRunRemoteQuery = () => {
     setIsQueryingRemote(true);
@@ -193,13 +185,9 @@ export const BugSelectorBar: React.FC<BugSelectorBarProps> = ({
                                       {bug.id}
                                     </span>
                                     <span
-                                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                        bug.severity === 'Critical'
-                                          ? 'bg-rose-100 text-rose-700'
-                                          : bug.severity === 'High'
-                                          ? 'bg-amber-100 text-amber-700'
-                                          : 'bg-indigo-100 text-indigo-700'
-                                      }`}
+                                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border ${getSeverityBadgeClass(
+                                        bug.severity
+                                      )}`}
                                     >
                                       {bug.severity}
                                     </span>

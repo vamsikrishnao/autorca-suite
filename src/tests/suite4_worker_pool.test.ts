@@ -1,17 +1,14 @@
 import { describe, it, expect } from 'vitest';
+import {
+  WorkerPoolMetrics,
+  checkTtlExpiration,
+  dispatchPodToPool,
+  getPodIndexFilePath,
+  calculatePoolUtilization,
+} from '../utils/workerPool';
+import { formatPrBranchName } from '../utils/github';
 
 describe('Suite 4: Ephemeral Worker Runner Pool & Worktree Operations (Targeted High-Impact Functional Unit Tests)', () => {
-  interface WorkerPoolMetrics {
-    activePods: number;
-    maxPods: number;
-    cpuQuotaPerPod: string;
-    memoryQuotaPerPod: string;
-    diskQuotaPerPod: string;
-    avgPodSpinupTimeMs: number;
-    isolationType: string;
-    gitIndexFileIsolated: boolean;
-  }
-
   const sampleWorkerPool: WorkerPoolMetrics = {
     activePods: 14,
     maxPods: 500,
@@ -45,25 +42,20 @@ describe('Suite 4: Ephemeral Worker Runner Pool & Worktree Operations (Targeted 
       bugId,
       tenantId,
       requestedQuota: { cpu: '2 vCPU', memory: '4 GB RAM' },
-      gitWorktreeBranch: `autorca/${bugId.toLowerCase()}-worktree`,
+      gitWorktreeBranch: formatPrBranchName(bugId),
       timestamp: Date.now(),
     });
 
     const payload = buildDispatchPayload('JIRA-4892', 'org-acme-corp');
     expect(payload.bugId).toBe('JIRA-4892');
     expect(payload.tenantId).toBe('org-acme-corp');
-    expect(payload.gitWorktreeBranch).toBe('autorca/jira-4892-worktree');
+    expect(payload.gitWorktreeBranch).toBe('autorca/fix-jira-4892');
     expect(payload.requestedQuota.cpu).toBe('2 vCPU');
   });
 
-  it('calculates workspace TTL expiration and triggers auto-prune when TTL exceeded', () => {
+  it('calculates workspace TTL expiration using exported checkTtlExpiration utility', () => {
     const podStartTimeMs = Date.now() - 15 * 60 * 1000; // Created 15 minutes ago
     const maxTtlMs = 10 * 60 * 1000; // 10 minutes TTL limit
-
-    const checkTtlExpiration = (startTime: number, ttl: number) => {
-      const age = Date.now() - startTime;
-      return { expired: age > ttl, ageMinutes: Math.round(age / (60 * 1000)) };
-    };
 
     const status = checkTtlExpiration(podStartTimeMs, maxTtlMs);
     expect(status.expired).toBe(true);
@@ -91,39 +83,26 @@ describe('Suite 4: Ephemeral Worker Runner Pool & Worktree Operations (Targeted 
     expect(activePodsMap.has('pod-8a1f')).toBe(false);
   });
 
-  it('rejects dispatch requests when active pods reach maximum pool capacity', () => {
+  it('rejects dispatch requests when active pods reach maximum pool capacity using exported dispatchPodToPool utility', () => {
     const fullPool = { ...sampleWorkerPool, activePods: 500 };
 
-    const dispatchPod = (pool: WorkerPoolMetrics) => {
-      if (pool.activePods >= pool.maxPods) {
-        return { status: 503, error: 'WORKER_POOL_CAPACITY_EXCEEDED' };
-      }
-      return { status: 200, podId: 'pod-new' };
-    };
-
-    const res = dispatchPod(fullPool);
+    const res = dispatchPodToPool(fullPool);
     expect(res.status).toBe(503);
     expect(res.error).toBe('WORKER_POOL_CAPACITY_EXCEEDED');
   });
 
-  it('isolates git index files per worker pod to prevent concurrent index lock contention', () => {
-    const getIndexFilePath = (podId: string) => `/tmp/worktrees/${podId}/.git/index`;
-
-    const path1 = getIndexFilePath('pod-101');
-    const path2 = getIndexFilePath('pod-102');
+  it('isolates git index files per worker pod using exported getPodIndexFilePath utility', () => {
+    const path1 = getPodIndexFilePath('pod-101');
+    const path2 = getPodIndexFilePath('pod-102');
 
     expect(path1).not.toBe(path2);
     expect(path1).toContain('pod-101');
     expect(path2).toContain('pod-102');
   });
 
-  it('calculates aggregate CPU and RAM pool utilization percentages', () => {
-    const calculateUtilization = (active: number, max: number) => {
-      return Number(((active / max) * 100).toFixed(1));
-    };
-
-    expect(calculateUtilization(14, 500)).toBe(2.8);
-    expect(calculateUtilization(250, 500)).toBe(50.0);
-    expect(calculateUtilization(500, 500)).toBe(100.0);
+  it('calculates aggregate CPU and RAM pool utilization percentages using exported calculatePoolUtilization utility', () => {
+    expect(calculatePoolUtilization(14, 500)).toBe(2.8);
+    expect(calculatePoolUtilization(250, 500)).toBe(50.0);
+    expect(calculatePoolUtilization(500, 500)).toBe(100.0);
   });
 });

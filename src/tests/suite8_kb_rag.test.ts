@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { defaultKnowledgeBases } from '../data/defaultConfig';
+import { filterKbChunksByRelevance, formatKbCitation } from '../utils/kb';
 
 describe('Suite 8: Knowledge Base Connectors & RAG Processing (Targeted High-Impact Functional Unit Tests)', () => {
   it('loads default knowledge base connectors including Confluence spaces and PDF post-mortems', () => {
@@ -10,16 +11,15 @@ describe('Suite 8: Knowledge Base Connectors & RAG Processing (Targeted High-Imp
     expect(types).toContain('Support Article');
   });
 
-  it('filters retrieved RAG context chunks by semantic relevance threshold (score >= 0.78)', () => {
+  it('filters retrieved RAG context chunks by semantic relevance threshold using exported filterKbChunksByRelevance utility', () => {
     const candidateChunks = [
-      { id: 'chunk-1', title: 'Stripe Webhook Safety Architecture Guide', relevanceScore: 0.89 },
-      { id: 'chunk-2', title: 'CSS Tailwind Flexbox Layout Notes', relevanceScore: 0.32 },
-      { id: 'chunk-3', title: 'Post-Mortem 2025 Null Parameter Crash', relevanceScore: 0.94 },
-      { id: 'chunk-4', title: 'Database Migration Script V12', relevanceScore: 0.65 },
+      { id: 'chunk-1', sourceName: 'Stripe Webhook Guide', content: 'Stripe Webhook Safety Architecture Guide details', score: 0.89 },
+      { id: 'chunk-2', sourceName: 'CSS Notes', content: 'CSS Tailwind Flexbox Layout Notes', score: 0.32 },
+      { id: 'chunk-3', sourceName: 'Post-Mortem 2025', content: 'Post-Mortem 2025 Null Parameter Crash details', score: 0.94 },
+      { id: 'chunk-4', sourceName: 'DB Script', content: 'Database Migration Script V12', score: 0.65 },
     ];
 
-    const minThreshold = 0.78;
-    const approvedChunks = candidateChunks.filter((c) => c.relevanceScore >= minThreshold);
+    const approvedChunks = filterKbChunksByRelevance(candidateChunks, 0.78);
 
     expect(approvedChunks.length).toBe(2);
     expect(approvedChunks.map((c) => c.id)).toEqual(['chunk-1', 'chunk-3']);
@@ -84,14 +84,17 @@ Wrap currency getter with Optional.ofNullable() or null guard condition.
     expect(connector.enabled).toBe(true);
   });
 
-  it('extracts citation handles and URLs for enterprise audit traceability', () => {
+  it('extracts citation handles and URLs using exported formatKbCitation utility', () => {
     const chunk = {
-      title: 'Stripe Webhook Safety Guide',
-      url: 'https://confluence.acme.internal/display/ARCH/Stripe+Webhook+Safety',
-      author: 'Security Team',
+      id: 'chunk-1',
+      sourceName: 'Stripe Webhook Safety Guide',
+      content: 'Always validate currency strings before calling toUpperCase() in payment webhooks.',
+      score: 0.92,
     };
 
-    const citation = `[Source: ${chunk.title}](${chunk.url})`;
-    expect(citation).toBe('[Source: Stripe Webhook Safety Guide](https://confluence.acme.internal/display/ARCH/Stripe+Webhook+Safety)');
+    const citation = formatKbCitation(chunk);
+    expect(citation).toContain('[Stripe Webhook Safety Guide]');
+    expect(citation).toContain('Score: 0.92');
+    expect(citation).toContain('Always validate currency strings');
   });
 });

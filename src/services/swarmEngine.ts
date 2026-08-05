@@ -140,3 +140,20 @@ export async function simulateSubAgentExecution(
   };
 }
 
+/**
+ * Evaluates harness test result and returns status
+ */
+export function verifyHarnessResult(res: { exitCode: number; stderr?: string }): {
+  status: 'COMPLETED' | 'Alert / Blocked';
+  error: string | null;
+} {
+  if (res.exitCode !== 0) {
+    return {
+      status: 'Alert / Blocked',
+      error: `Harness test suite failed: ${res.stderr || 'Exit code ' + res.exitCode}`,
+    };
+  }
+  return { status: 'COMPLETED', error: null };
+}
+
+

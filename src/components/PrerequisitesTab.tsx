@@ -19,6 +19,9 @@ import {
   BugItem,
 } from '../types';
 import { SAMPLE_CSV_TEMPLATE } from '../data/defaultConfig';
+import { validateConnectorEndpoint, maskSecretToken } from '../utils/connectors';
+import { filterKbChunksByRelevance, formatKbCitation } from '../utils/kb';
+import { sanitizeTenantId, buildTenantHeaders, buildSafeTenantHeaders } from '../utils/tenant';
 
 interface PrerequisitesTabProps {
   knowledgeSources: KnowledgeSource[];
@@ -63,10 +66,17 @@ export const PrerequisitesTab: React.FC<PrerequisitesTabProps> = ({
     setIsValidatingKb(true);
     setKbValidationError(null);
 
+    const clientValidation = validateConnectorEndpoint({ url: newUrlOrFilename, type: newType });
+    if (!clientValidation.success) {
+      setKbValidationError(clientValidation.error || 'Invalid endpoint URL');
+      setIsValidatingKb(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/connectors/validate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...buildSafeTenantHeaders({ tenantId: 'org-acme-corp' }) },
         body: JSON.stringify({
           type: newType,
           url: newUrlOrFilename,

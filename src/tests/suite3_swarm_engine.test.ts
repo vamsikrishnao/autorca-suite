@@ -4,6 +4,7 @@ import {
   updateSwarmTokensForIteration,
   calculateTokenCost,
   simulateSubAgentExecution,
+  verifyHarnessResult,
 } from '../services/swarmEngine';
 import { defaultSubAgents, defaultBugs } from '../data/defaultConfig';
 
@@ -26,7 +27,7 @@ describe('Suite 3: Autonomous Swarm Engine & Sub-Agent State Loop (Targeted High
 
   it('calculates baseline token allocation for RCA Analyst on Critical severity bug', () => {
     const { tokensUsed, costUsd } = calculateDynamicAgentTokens('RCA Analyst', criticalBug, 1);
-    
+
     // Base 420 * Critical multiplier 1.35 * iteration 1.0 = ~567 tokens
     expect(tokensUsed).toBe(567);
     expect(costUsd).toBeGreaterThan(0);
@@ -91,17 +92,10 @@ describe('Suite 3: Autonomous Swarm Engine & Sub-Agent State Loop (Targeted High
     expect(agentState).toBe('COMPLETED');
   });
 
-  it('handles harness test failure and triggers Alert / Blocked state', () => {
+  it('handles harness test failure using exported verifyHarnessResult utility', () => {
     const harnessResult = { exitCode: 1, stderr: 'Test assertion failed: Expected 200 OK, got 500' };
 
-    const handleHarnessVerification = (res: { exitCode: number }) => {
-      if (res.exitCode !== 0) {
-        return { status: 'Alert / Blocked' as const, error: 'Harness test suite failed' };
-      }
-      return { status: 'COMPLETED' as const, error: null };
-    };
-
-    const status = handleHarnessVerification(harnessResult);
+    const status = verifyHarnessResult(harnessResult);
     expect(status.status).toBe('Alert / Blocked');
     expect(status.error).toContain('failed');
   });

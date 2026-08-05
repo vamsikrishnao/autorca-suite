@@ -19,6 +19,10 @@ import {
   Zap,
 } from 'lucide-react';
 import { ModelConfig, GuardrailConfig, LogEntry, SiemAuditEvent } from '../types';
+import { clampTemperature, validateAlertEmail, checkGuardrails } from '../utils/guardrails';
+import { validateSandboxCommand } from '../utils/sandbox';
+import { maskSecretToken } from '../utils/connectors';
+import { formatCef, getSiemStatusBadgeClass } from '../utils/audit';
 
 interface GuardrailsTabProps {
   modelConfig: ModelConfig;
@@ -94,20 +98,25 @@ export const GuardrailsTab: React.FC<GuardrailsTabProps> = ({
   const handleRunForbiddenCommandTest = async () => {
     setIsTestCommandRunning(true);
     setTestCommandResult(null);
+    const testCmd = 'rm -rf /tmp/autorca && sudo shutdown -h now';
+    const localCheck = validateSandboxCommand(testCmd);
+    if (!localCheck.approved) {
+      console.info('[Client Guardrail Check]', localCheck.error);
+    }
     try {
       const res = await fetch('/api/sandbox/validate-command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: 'rm -rf /tmp/autorca && sudo shutdown -h now' }),
+        body: JSON.stringify({ command: testCmd }),
       });
       const data = await res.json();
       if (res.status === 403 || data.securityViolation) {
-        setTestCommandResult(`BLOCKED BY SANDBOX: ${data.error}`);
+        setTestCommandResult(`BLOCKED BY SANDBOX: ${data.error || localCheck.error}`);
       } else {
         setTestCommandResult('Command Passed Sandbox Check');
       }
     } catch (err: any) {
-      setTestCommandResult('Sandbox Check Execution Failed');
+      setTestCommandResult(`BLOCKED BY SANDBOX: ${localCheck.error || 'Execution intercepted'}`);
     } finally {
       setIsTestCommandRunning(false);
     }
@@ -236,7 +245,7 @@ export const GuardrailsTab: React.FC<GuardrailsTabProps> = ({
                 onChange={(e) =>
                   onUpdateModelConfig({
                     ...modelConfig,
-                    temperature: parseFloat(e.target.value),
+                    temperature: clampTemperature(parseFloat(e.target.value)),
                   })
                 }
                 className="w-full mt-1.5 accent-indigo-600"
@@ -266,6 +275,32 @@ export const GuardrailsTab: React.FC<GuardrailsTabProps> = ({
             <span>Test Email Alert</span>
           </button>
         </div>
+
+        {/* Check Guardrails Status */}
+        {(() => {
+          const breach = checkGuardrails(
+            totalTokensBurnt,
+            totalCostUsd,
+            guardrailConfig.maxTokensPerRun,
+            guardrailConfig.maxCostUsd
+          );
+          if (breach.tripped) {
+            return (
+              <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>
+                    <strong>Guardrail Breach Active:</strong> {breach.reasons.join(' | ')}
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-200 text-rose-900 uppercase font-bold">
+                  Tripped
+                </span>
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         {/* Live Token & Cost Meter Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -328,9 +363,22 @@ export const GuardrailsTab: React.FC<GuardrailsTabProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                Configurable Alert Email Mailbox
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-slate-700 uppercase">
+                  Configurable Alert Email Mailbox
+                </label>
+                {guardrailConfig.alertEmailAddress && (
+                  <span
+                    className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded ${
+                      validateAlertEmail(guardrailConfig.alertEmailAddress)
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-rose-100 text-rose-800'
+                    }`}
+                  >
+                    {validateAlertEmail(guardrailConfig.alertEmailAddress) ? 'Valid Email' : 'Invalid Syntax'}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
