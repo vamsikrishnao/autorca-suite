@@ -144,6 +144,168 @@ async function startServer() {
 
   app.use(express.json());
 
+  // =========================================================================
+  // SERVER-SIDE USER SESSION & SSO / GITHUB / EMAIL AUTHENTICATION
+  // =========================================================================
+  interface ServerUserSession {
+    sessionId: string;
+    user: {
+      id: string;
+      email: string;
+      name: string;
+      avatar?: string;
+      provider: 'sso' | 'github' | 'email';
+      organization: string;
+      ssoDomain?: string;
+      targetRepo: string;
+      targetBranch: string;
+    };
+    createdAt: string;
+    expiresAt: string;
+  }
+
+  const activeServerSessions = new Map<string, ServerUserSession>();
+
+  // Default active session for instant application access
+  const DEFAULT_DEMO_SESSION: ServerUserSession = {
+    sessionId: 'sess-demo-active',
+    user: {
+      id: 'usr-101',
+      email: 'engineer@acmecorp.com',
+      name: 'Jane Doe',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+      provider: 'sso',
+      organization: 'Acme Enterprise',
+      targetRepo: 'autorca-suite/autorca-suite',
+      targetBranch: 'main',
+    },
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 86400000).toISOString(),
+  };
+  activeServerSessions.set(DEFAULT_DEMO_SESSION.sessionId, DEFAULT_DEMO_SESSION);
+
+  // Parse session token from cookies or Auth header
+  function getSessionFromRequest(req: express.Request): ServerUserSession | null {
+    const cookieHeader = req.headers.cookie || '';
+    const match = cookieHeader.match(/autorca_session=([^;]+)/);
+    const sessionFromCookie = match ? match[1] : null;
+
+    const authHeader = req.headers.authorization || '';
+    const sessionFromHeader = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+    const token = sessionFromCookie || sessionFromHeader || 'sess-demo-active';
+    const found = activeServerSessions.get(token);
+    if (found && new Date(found.expiresAt).getTime() > Date.now()) {
+      return found;
+    }
+    return DEFAULT_DEMO_SESSION;
+  }
+
+  // GET /api/auth/session - Retrieve active user session
+  app.get("/api/auth/session", (req, res) => {
+    const session = getSessionFromRequest(req);
+    return res.json({
+      authenticated: !!session,
+      session: session || null,
+    });
+  });
+
+  // POST /api/auth/login - Establish new user session (SSO, GitHub, Email)
+  app.post("/api/auth/login", (req, res) => {
+    const { provider = 'sso', email, name, organization, targetRepo, targetBranch } = req.body || {};
+
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ success: false, error: 'Valid user email address is required.' });
+    }
+
+    const sessionId = `sess-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const cleanEmail = email.trim().toLowerCase();
+    const displayName = name ? name.trim() : cleanEmail.split('@')[0];
+    const userOrg = organization ? organization.trim() : 'Enterprise Workspace';
+
+    const newSession: ServerUserSession = {
+      sessionId,
+      user: {
+        id: `usr-${Date.now()}`,
+        email: cleanEmail,
+        name: displayName,
+        provider: provider as 'sso' | 'github' | 'email',
+        organization: userOrg,
+        targetRepo: targetRepo || 'autorca-suite/autorca-suite',
+        targetBranch: targetBranch || 'main',
+      },
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    };
+
+    activeServerSessions.set(sessionId, newSession);
+
+    res.setHeader(
+      'Set-Cookie',
+      `autorca_session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=86400`
+    );
+
+    return res.json({
+      success: true,
+      message: 'User session successfully established.',
+      session: newSession,
+    });
+  });
+
+  // POST /api/auth/logout - Invalidate user session
+  app.post("/api/auth/logout", (req, res) => {
+    const session = getSessionFromRequest(req);
+    if (session && session.sessionId !== 'sess-demo-active') {
+      activeServerSessions.delete(session.sessionId);
+    }
+    res.setHeader(
+      'Set-Cookie',
+      'autorca_session=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0'
+    );
+    return res.json({
+      success: true,
+      message: 'Logged out successfully.',
+    });
+  });
+
+  // POST /api/user/workspace - Update user session target repository settings
+  app.post("/api/user/workspace", (req, res) => {
+    const session = getSessionFromRequest(req);
+    if (!session) {
+      return res.status(401).json({ success: false, error: 'Unauthorized: Active user session required.' });
+    }
+
+    const { targetRepo, targetBranch } = req.body || {};
+    if (targetRepo) session.user.targetRepo = targetRepo.trim();
+    if (targetBranch) session.user.targetBranch = targetBranch.trim();
+
+    return res.json({
+      success: true,
+      message: 'User target repository workspace updated.',
+      session,
+    });
+  });
+
+  // GET /api/auth/sso-url - OAuth Provider Authorization URL according to OAuth Integration guidelines
+  app.get("/api/auth/sso-url", (req, res) => {
+    const appUrl = process.env.APP_URL || 'http://localhost:3000';
+    const redirectUri = `${appUrl}/auth/callback`;
+    const ssoProviderUrl = process.env.OAUTH_PROVIDER_URL || 'https://github.com/login/oauth/authorize';
+
+    const params = new URLSearchParams({
+      client_id: process.env.OAUTH_CLIENT_ID || 'autorca_demo_client_id',
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'user:email,repo',
+    });
+
+    return res.json({
+      success: true,
+      url: `${ssoProviderUrl}?${params.toString()}`,
+      redirectUri,
+    });
+  });
+
   // Health and SDK Info API endpoint
   app.get("/api/health", (req, res) => {
     res.json({

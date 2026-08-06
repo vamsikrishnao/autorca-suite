@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ShieldAlert } from 'lucide-react';
 import {
   BugItem,
   KnowledgeBaseSource,
@@ -38,11 +39,27 @@ import { FrameworkTab } from './components/FrameworkTab';
 import { LibraryExportTab } from './components/LibraryExportTab';
 import { EmailAlertModal } from './components/EmailAlertModal';
 import { SubAgentPromptsTab } from './components/SubAgentPromptsTab';
+import { LoginModal, UserSessionData } from './components/LoginModal';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<
     'loop' | 'prereqs' | 'github' | 'prompts' | 'guardrails' | 'framework' | 'library'
   >('loop');
+
+  // User session & authentication state
+  const [session, setSession] = useState<UserSessionData | null>({
+    sessionId: 'sess-demo-active',
+    user: {
+      id: 'usr-101',
+      email: 'engineer@acmecorp.com',
+      name: 'Jane Doe',
+      provider: 'sso',
+      organization: 'Acme Enterprise',
+      targetRepo: 'autorca-suite/autorca-suite',
+      targetBranch: 'main',
+    },
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   // Core configuration & domain states
   const [bugs, setBugs] = useState<BugItem[]>(defaultBugs);
@@ -247,6 +264,10 @@ export default function App() {
 
   // Handler: Trigger Draft PR creation with CI verification
   const handleTriggerDraftPR = (bugId: string) => {
+    if (!session) {
+      setIsAuthModalOpen(true);
+      return;
+    }
     const targetBug = bugs.find((b) => b.id === bugId) || bugs[0];
     const newPRNumber = Math.floor(Math.random() * 800) + 100;
     const branchName = `autorca/fix-${bugId.toLowerCase()}`;
@@ -276,6 +297,10 @@ export default function App() {
 
   // Handler: Run the autonomous Loop Engineering Auto-Fix workflow
   const handleRunAutoFixLoop = async (bugId: string) => {
+    if (!session) {
+      setIsAuthModalOpen(true);
+      return;
+    }
     if (isLoopRunning) return;
     setIsLoopRunning(true);
     setCurrentIteration(1);
@@ -409,45 +434,29 @@ export default function App() {
         }}
         isRunning={isLoopRunning}
         tenantContext={tenantContext}
-        onTenantChange={(tenantId, projectId) => {
-          const repoMap: Record<string, string> = {
-            'proj-autorca-suite': 'autorca-suite/autorca-suite',
-            'proj-payment-gateway': 'autorca-suite/payment-gateway-v2',
-            'proj-ios-app': 'autorca-suite/acme-mobile-ios',
-            'proj-fraud-detection': 'fintech-global/fraud-detection-engine',
-          };
-          const targetRepo = repoMap[projectId] || 'autorca-suite/autorca-suite';
-
-          setTenantContext({
-            tenantId,
-            teamId: tenantId === 'org-acme-corp' ? 'team-payments' : 'team-risk',
-            projectId,
-            userId: 'user-engineer-1',
-          });
-
-          setGitHubConfig((prev) => ({
-            ...prev,
-            repository: targetRepo,
-            repoUrl: `https://github.com/${targetRepo}`,
-          }));
-
-          setLogs((prev) => [
-            {
-              id: `LOG-${Date.now()}`,
-              timestamp: new Date().toLocaleTimeString(),
-              subAgent: 'Guardrail Auditor',
-              action: 'TENANT_CONTEXT_SWITCHED',
-              message: `Switched active context to Tenant: [${tenantId}] • Project: [${projectId}] • Target Repository: [${targetRepo}]`,
-              tokensBurnt: { input: 0, output: 0, total: 0 },
-              status: 'INFO',
-            },
-            ...prev,
-          ]);
-        }}
+        session={session}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {!session && (
+          <div className="mb-5 p-3.5 bg-amber-50 border border-amber-200/80 rounded-xl flex flex-wrap items-center justify-between text-xs text-amber-900 font-medium shadow-xs gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>Guest Mode Preview:</strong> You are exploring in unauthenticated mode. All tabs are accessible for inspection, but executing Auto-RCA loops or dispatching PRs requires signing in.
+              </span>
+            </div>
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="px-3.5 py-1.5 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-lg shadow-xs transition shrink-0 cursor-pointer"
+            >
+              Sign In / SSO
+            </button>
+          </div>
+        )}
+
         {activeTab === 'loop' && (
           <LoopWorkbench
             bugs={bugs}
@@ -573,6 +582,88 @@ export default function App() {
             ...prev,
           ]);
           setEmailModalOpen(false);
+        }}
+      />
+
+      {/* User Authentication & Workspace Settings Modal */}
+      <LoginModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        session={session}
+        onLoginSuccess={(newSession) => {
+          setSession(newSession);
+          if (newSession.user.targetRepo) {
+            setGitHubConfig((prev) => ({
+              ...prev,
+              repository: newSession.user.targetRepo,
+              repoUrl: `https://github.com/${newSession.user.targetRepo}`,
+            }));
+          }
+          setLogs((prev) => [
+            {
+              id: `LOG-${Date.now()}`,
+              timestamp: new Date().toLocaleTimeString(),
+              subAgent: 'Guardrail Auditor',
+              action: 'USER_AUTHENTICATED',
+              message: `User session established for ${newSession.user.name} (${newSession.user.email}) via ${newSession.user.provider.toUpperCase()} SSO. Target repository: ${newSession.user.targetRepo}`,
+              tokensBurnt: { input: 0, output: 0, total: 0 },
+              status: 'INFO',
+            },
+            ...prev,
+          ]);
+        }}
+        onLogoutSuccess={() => {
+          setSession(null);
+          setLogs((prev) => [
+            {
+              id: `LOG-${Date.now()}`,
+              timestamp: new Date().toLocaleTimeString(),
+              subAgent: 'Guardrail Auditor',
+              action: 'USER_LOGGED_OUT',
+              message: 'User session logged out successfully.',
+              tokensBurnt: { input: 0, output: 0, total: 0 },
+              status: 'INFO',
+            },
+            ...prev,
+          ]);
+        }}
+        onUpdateWorkspace={(repo, branch) => {
+          if (session) {
+            const updated = {
+              ...session,
+              user: {
+                ...session.user,
+                targetRepo: repo,
+                targetBranch: branch,
+              },
+            };
+            setSession(updated);
+
+            setGitHubConfig((prev) => ({
+              ...prev,
+              repository: repo,
+              repoUrl: `https://github.com/${repo}`,
+            }));
+
+            fetch('/api/user/workspace', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ targetRepo: repo, targetBranch: branch }),
+            }).catch((err) => console.warn('Failed to sync workspace with server:', err));
+
+            setLogs((prev) => [
+              {
+                id: `LOG-${Date.now()}`,
+                timestamp: new Date().toLocaleTimeString(),
+                subAgent: 'Guardrail Auditor',
+                action: 'WORKSPACE_TARGET_UPDATED',
+                message: `Updated target repository workspace to: ${repo} (Branch: ${branch})`,
+                tokensBurnt: { input: 0, output: 0, total: 0 },
+                status: 'INFO',
+              },
+              ...prev,
+            ]);
+          }
         }}
       />
     </div>

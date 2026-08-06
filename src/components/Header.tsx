@@ -9,12 +9,15 @@ import {
   PackageCheck,
   Zap,
   Play,
-  Building2,
   FolderGit2,
   Sparkles,
+  UserCheck,
+  User,
+  Settings2,
 } from 'lucide-react';
 import { ModelConfig, GuardrailConfig, TenantContext } from '../types';
 import { I18N } from '../config/i18n';
+import { UserSessionData } from './LoginModal';
 
 interface HeaderProps {
   activeTab: string;
@@ -28,6 +31,8 @@ interface HeaderProps {
   isRunning?: boolean;
   tenantContext?: TenantContext;
   onTenantChange?: (tenantId: string, projectId: string) => void;
+  session?: UserSessionData | null;
+  onOpenAuthModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -40,12 +45,8 @@ export const Header: React.FC<HeaderProps> = ({
   onTestGuardrailAlert,
   onRunHarness,
   isRunning = false,
-  tenantContext = {
-    tenantId: 'org-acme-corp',
-    teamId: 'team-payments',
-    projectId: 'proj-autorca-suite',
-    userId: 'user-engineer-1',
-  },
+  session,
+  onOpenAuthModal,
 }) => {
   const tokenPercentage = Math.min(
     100,
@@ -87,17 +88,41 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Organization & Project Context Badge - Always visible on all screens */}
-        <div className="flex items-center gap-2 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shrink-0">
-          <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-          <span className="font-mono text-[11px]">
-            {tenantContext.tenantId === 'org-acme-corp' ? 'Acme Corp' : tenantContext.tenantId}
-          </span>
-          <span className="text-slate-300">•</span>
-          <FolderGit2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-          <span className="font-mono text-[11px]">
-            {tenantContext.projectId === 'proj-autorca-suite' ? 'autorca-suite' : tenantContext.projectId}
-          </span>
+        {/* User Session Profile & Active Target Repository Widget - Always visible */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenAuthModal}
+            className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 transition cursor-pointer"
+            title="Manage User Account & Workspace Settings"
+          >
+            {session ? (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center">
+                  {session.user.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="font-bold text-slate-900">{session.user.name}</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase bg-indigo-100 text-indigo-800">
+                  {session.user.provider === 'sso' ? 'SSO' : session.user.provider.toUpperCase()}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-indigo-600 font-bold">
+                <User className="w-3.5 h-3.5" />
+                <span>Sign In / SSO</span>
+              </div>
+            )}
+
+            <span className="text-slate-300">|</span>
+
+            <div className="flex items-center gap-1.5">
+              <FolderGit2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span className="font-mono text-[11px] text-slate-800">
+                {session?.user?.targetRepo || 'autorca-suite/autorca-suite'}
+              </span>
+            </div>
+
+            <Settings2 className="w-3.5 h-3.5 text-slate-400 ml-1 hover:text-indigo-600" />
+          </button>
         </div>
 
         {/* Right Session Token Burn & Harness Action */}
