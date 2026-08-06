@@ -365,6 +365,7 @@ export const PrerequisitesTab: React.FC<PrerequisitesTabProps> = ({
                 className="w-full p-2 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="Confluence">Confluence URL</option>
+                <option value="SharePoint">SharePoint Site / Library</option>
                 <option value="Support Article">Support Article Folder URL</option>
                 <option value="PDF Document">PDF Document URL</option>
                 <option value="JSON KB">JSON KB Rule URL</option>
@@ -378,7 +379,11 @@ export const PrerequisitesTab: React.FC<PrerequisitesTabProps> = ({
               </label>
               <input
                 type="text"
-                placeholder="e.g. Confluence: Concurrency Locking Rules"
+                placeholder={
+                  newType === 'SharePoint'
+                    ? 'e.g. SharePoint: Security & Auth Policy Library'
+                    : 'e.g. Confluence: Concurrency Locking Rules'
+                }
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 className="w-full p-2 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -391,7 +396,11 @@ export const PrerequisitesTab: React.FC<PrerequisitesTabProps> = ({
               </label>
               <input
                 type="text"
-                placeholder="https://confluence.company.internal/docs/..."
+                placeholder={
+                  newType === 'SharePoint'
+                    ? 'https://acmecorp.sharepoint.com/sites/engineering/docs/...'
+                    : 'https://confluence.company.internal/docs/...'
+                }
                 value={newUrlOrFilename}
                 onChange={(e) => setNewUrlOrFilename(e.target.value)}
                 className="w-full p-2 text-xs bg-white border border-slate-300 rounded-md font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"

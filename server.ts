@@ -689,6 +689,20 @@ async function startServer() {
           error: "Confluence Validation Failed: Hostname does not match an Atlassian Confluence instance domain.",
         });
       }
+    } else if (type === "SharePoint") {
+      const isSharePointUri = targetUrl.startsWith("sharepoint://");
+      if (!isHttp && !isSharePointUri) {
+        return res.status(400).json({
+          success: false,
+          error: "SharePoint Validation Failed: Must be a valid HTTP/HTTPS URL or sharepoint:// path.",
+        });
+      }
+      if (!targetUrl.includes("sharepoint") && !targetUrl.includes("office") && !targetUrl.includes("microsoft")) {
+        return res.status(400).json({
+          success: false,
+          error: "SharePoint Validation Failed: Domain must match a SharePoint or Office365 site (e.g. https://tenant.sharepoint.com/sites/...).",
+        });
+      }
     } else if (type === "GitHub Wiki") {
       if (!isHttp || !targetUrl.includes("github.com")) {
         return res.status(400).json({

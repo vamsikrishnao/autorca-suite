@@ -236,6 +236,15 @@ export const defaultKnowledgeBases: KnowledgeSource[] = [
     lastIndexed: '2026-07-31 08:30 AM',
     status: 'Connected',
   },
+  {
+    id: 'kb-4',
+    type: 'SharePoint',
+    name: 'SharePoint Site: Enterprise Security & Auth Architecture Docs',
+    urlOrFilename: 'https://acmecorp.sharepoint.com/sites/engineering/docs/Security_Guidelines.docx',
+    contentSnippet: 'SharePoint Document Library Index: OAuth token refreshers must validate cached token state and handle null values with defensive locking in multi-tenant environments.',
+    lastIndexed: '2026-08-05 09:15 AM',
+    status: 'Connected',
+  },
 ];
 
 export const DEFAULT_KNOWLEDGE_SOURCES = defaultKnowledgeBases;

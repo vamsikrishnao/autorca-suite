@@ -410,12 +410,39 @@ export default function App() {
         isRunning={isLoopRunning}
         tenantContext={tenantContext}
         onTenantChange={(tenantId, projectId) => {
+          const repoMap: Record<string, string> = {
+            'proj-autorca-suite': 'autorca-suite/autorca-suite',
+            'proj-payment-gateway': 'autorca-suite/payment-gateway-v2',
+            'proj-ios-app': 'autorca-suite/acme-mobile-ios',
+            'proj-fraud-detection': 'fintech-global/fraud-detection-engine',
+          };
+          const targetRepo = repoMap[projectId] || 'autorca-suite/autorca-suite';
+
           setTenantContext({
             tenantId,
             teamId: tenantId === 'org-acme-corp' ? 'team-payments' : 'team-risk',
             projectId,
             userId: 'user-engineer-1',
           });
+
+          setGitHubConfig((prev) => ({
+            ...prev,
+            repository: targetRepo,
+            repoUrl: `https://github.com/${targetRepo}`,
+          }));
+
+          setLogs((prev) => [
+            {
+              id: `LOG-${Date.now()}`,
+              timestamp: new Date().toLocaleTimeString(),
+              subAgent: 'Guardrail Auditor',
+              action: 'TENANT_CONTEXT_SWITCHED',
+              message: `Switched active context to Tenant: [${tenantId}] • Project: [${projectId}] • Target Repository: [${targetRepo}]`,
+              tokensBurnt: { input: 0, output: 0, total: 0 },
+              status: 'INFO',
+            },
+            ...prev,
+          ]);
         }}
       />
 

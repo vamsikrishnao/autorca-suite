@@ -89,12 +89,16 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Multi-Tenant Organization & Project Context Selector */}
-        <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg">
+        <div className="flex flex-wrap items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg">
           <div className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold">
             <Building2 className="w-3.5 h-3.5 text-indigo-600" />
             <select
               value={tenantContext.tenantId}
-              onChange={(e) => onTenantChange && onTenantChange(e.target.value, tenantContext.projectId)}
+              onChange={(e) => {
+                const nextTenant = e.target.value;
+                const defaultProject = nextTenant === 'org-acme-corp' ? 'proj-autorca-suite' : 'proj-fraud-detection';
+                if (onTenantChange) onTenantChange(nextTenant, defaultProject);
+              }}
               className="bg-transparent border-none text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
             >
               <option value="org-acme-corp">Acme Corp [Org-101]</option>

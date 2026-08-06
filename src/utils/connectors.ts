@@ -26,6 +26,14 @@ export function validateConnectorEndpoint(req: {
     if (!targetUrl.includes('.atlassian.net') && !targetUrl.includes('confluence') && !targetUrl.includes('internal')) {
       return { success: false, error: 'Confluence Validation Failed: Hostname does not match an Atlassian Confluence instance domain.' };
     }
+  } else if (req.type === 'SharePoint') {
+    const isSharePointUri = targetUrl.startsWith('sharepoint://');
+    if (!isHttp && !isSharePointUri) {
+      return { success: false, error: 'SharePoint Validation Failed: Must be a valid HTTP/HTTPS URL or sharepoint:// URI.' };
+    }
+    if (!targetUrl.includes('sharepoint') && !targetUrl.includes('office') && !targetUrl.includes('microsoft')) {
+      return { success: false, error: 'SharePoint Validation Failed: Domain must match a SharePoint or Office365 site (e.g. https://tenant.sharepoint.com/sites/...).' };
+    }
   } else if (req.platform === 'Jira') {
     if (!isHttp) {
       return { success: false, error: 'Jira Validation Failed: Must start with https:// or http://.' };

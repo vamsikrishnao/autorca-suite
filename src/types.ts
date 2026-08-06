@@ -62,7 +62,7 @@ export interface BugItem {
 
 export interface KnowledgeSource {
   id: string;
-  type: 'Confluence' | 'Support Article' | 'PDF Document' | 'JSON KB' | 'GitHub Wiki' | 'SupportFolder';
+  type: 'Confluence' | 'Support Article' | 'PDF Document' | 'JSON KB' | 'GitHub Wiki' | 'SupportFolder' | 'SharePoint';
   name: string;
   urlOrFilename: string;
   contentSnippet: string;
