@@ -67,26 +67,34 @@ export class DistributedSessionStore {
       console.log('[DistributedSessionStore] REDIS_URL not configured. Operating in high-performance local store mode.');
     }
 
-    // Pre-seed demo session in memory fallback for developer convenience
-    const demoSession: ServerUserSession = {
-      sessionId: 'sess-demo-active',
-      user: {
-        id: 'usr-101',
-        email: 'engineer@acmecorp.com',
-        name: 'Jane Doe',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-        provider: 'sso',
-        organization: 'Acme Enterprise',
-        targetRepo: 'autorca-suite/autorca-suite',
-        targetBranch: 'main',
-      },
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 86400000).toISOString(),
-    };
-    this.inMemoryStore.set(demoSession.sessionId, {
-      session: demoSession,
-      expiresAtMs: Date.now() + 86400000,
-    });
+    // Pre-seed demo session ONLY in development/sandbox environments for developer convenience.
+    // Strictly prohibited in production unless explicitly enabled via ALLOW_DEMO_SESSIONS=true.
+    const isProduction = process.env.NODE_ENV === 'production';
+    const allowDemoSession = process.env.ALLOW_DEMO_SESSIONS === 'true' || (!isProduction);
+
+    if (allowDemoSession) {
+      const demoSession: ServerUserSession = {
+        sessionId: 'sess-demo-active',
+        user: {
+          id: 'usr-101',
+          email: 'engineer@acmecorp.com',
+          name: 'Jane Doe',
+          avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+          provider: 'sso',
+          organization: 'Acme Enterprise',
+          targetRepo: 'autorca-suite/autorca-suite',
+          targetBranch: 'main',
+        },
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      };
+      this.inMemoryStore.set(demoSession.sessionId, {
+        session: demoSession,
+        expiresAtMs: Date.now() + 86400000,
+      });
+    } else {
+      console.log('[DistributedSessionStore] Production Mode: Pre-seeded demo sessions disabled.');
+    }
   }
 
   public isRedisActive(): boolean {
