@@ -697,7 +697,12 @@ async function startServer() {
           error: "SharePoint Validation Failed: Must be a valid HTTP/HTTPS URL or sharepoint:// path.",
         });
       }
-      if (!targetUrl.includes("sharepoint") && !targetUrl.includes("office") && !targetUrl.includes("microsoft")) {
+      const hasSharePointDomain =
+        targetUrl.includes(".sharepoint.com") ||
+        targetUrl.includes(".sharepoint-df.com") ||
+        targetUrl.includes("office.com/launch/sharepoint") ||
+        isSharePointUri;
+      if (!hasSharePointDomain) {
         return res.status(400).json({
           success: false,
           error: "SharePoint Validation Failed: Domain must match a SharePoint or Office365 site (e.g. https://tenant.sharepoint.com/sites/...).",

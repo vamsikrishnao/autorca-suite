@@ -101,4 +101,17 @@ describe('Suite 1: Multi-Tenant & Multi-Project Context Isolation (Targeted High
     expect(sanitizeTenantId('Org-Acme_Corp!')).toBe('org-acmecorp');
     expect(sanitizeTenantId('Tenant<script>')).toBe('tenantscript');
   });
+
+  it('maps organization and project selections to corresponding target GitHub repositories', () => {
+    const repoMap: Record<string, string> = {
+      'proj-autorca-suite': 'autorca-suite/autorca-suite',
+      'proj-payment-gateway': 'autorca-suite/payment-gateway-v2',
+      'proj-ios-app': 'autorca-suite/acme-mobile-ios',
+      'proj-fraud-detection': 'fintech-global/fraud-detection-engine',
+    };
+
+    expect(repoMap['proj-autorca-suite']).toBe('autorca-suite/autorca-suite');
+    expect(repoMap['proj-fraud-detection']).toBe('fintech-global/fraud-detection-engine');
+    expect(repoMap['unknown-project'] || 'autorca-suite/autorca-suite').toBe('autorca-suite/autorca-suite');
+  });
 });

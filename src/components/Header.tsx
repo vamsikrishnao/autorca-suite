@@ -46,7 +46,6 @@ export const Header: React.FC<HeaderProps> = ({
     projectId: 'proj-autorca-suite',
     userId: 'user-engineer-1',
   },
-  onTenantChange,
 }) => {
   const tokenPercentage = Math.min(
     100,
@@ -88,45 +87,13 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Multi-Tenant Organization & Project Context Selector */}
-        <div className="flex flex-wrap items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg">
-          <div className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold">
-            <Building2 className="w-3.5 h-3.5 text-indigo-600" />
-            <select
-              value={tenantContext.tenantId}
-              onChange={(e) => {
-                const nextTenant = e.target.value;
-                const defaultProject = nextTenant === 'org-acme-corp' ? 'proj-autorca-suite' : 'proj-fraud-detection';
-                if (onTenantChange) onTenantChange(nextTenant, defaultProject);
-              }}
-              className="bg-transparent border-none text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-            >
-              <option value="org-acme-corp">Acme Corp [Org-101]</option>
-              <option value="org-fintech-global">FinTech Global [Org-202]</option>
-            </select>
-          </div>
-          <span className="text-slate-300">|</span>
-          <div className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold">
-            <FolderGit2 className="w-3.5 h-3.5 text-emerald-600" />
-            <select
-              value={tenantContext.projectId}
-              onChange={(e) => onTenantChange && onTenantChange(tenantContext.tenantId, e.target.value)}
-              className="bg-transparent border-none text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-            >
-              {tenantContext.tenantId === 'org-acme-corp' ? (
-                <>
-                  <option value="proj-autorca-suite">autorca-suite</option>
-                  <option value="proj-payment-gateway">payment-gateway-v2</option>
-                  <option value="proj-ios-app">acme-mobile-ios</option>
-                </>
-              ) : (
-                <option value="proj-fraud-detection">fraud-detection-engine</option>
-              )}
-            </select>
-          </div>
-          <span className="ml-1 text-[10px] bg-indigo-100 text-indigo-700 font-mono px-1.5 py-0.5 rounded">
-            Tenant Isolated
-          </span>
+        {/* Organization & Project Context Badge */}
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+          <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+          <span>Acme Corp</span>
+          <span className="text-slate-300">•</span>
+          <FolderGit2 className="w-3.5 h-3.5 text-emerald-600" />
+          <span>autorca-suite</span>
         </div>
 
         {/* Right Session Token Burn & Harness Action */}

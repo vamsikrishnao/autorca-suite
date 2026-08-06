@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { defaultKnowledgeBases } from '../data/defaultConfig';
 import { filterKbChunksByRelevance, formatKbCitation } from '../utils/kb';
+import { validateConnectorEndpoint } from '../utils/connectors';
 
 describe('Suite 8: Knowledge Base Connectors & RAG Processing (Targeted High-Impact Functional Unit Tests)', () => {
   it('loads default knowledge base connectors including Confluence spaces and PDF post-mortems', () => {
@@ -9,6 +10,28 @@ describe('Suite 8: Knowledge Base Connectors & RAG Processing (Targeted High-Imp
 
     expect(types).toContain('Confluence');
     expect(types).toContain('Support Article');
+    expect(types).toContain('SharePoint');
+  });
+
+  it('validates SharePoint Knowledge Base connector endpoints and sharepoint:// URIs', () => {
+    const validSharePointUrl = validateConnectorEndpoint({
+      url: 'https://acmecorp.sharepoint.com/sites/engineering/docs/Security_Guidelines.docx',
+      type: 'SharePoint',
+    });
+    expect(validSharePointUrl.success).toBe(true);
+
+    const validSharePointUri = validateConnectorEndpoint({
+      url: 'sharepoint://tenant.sharepoint.com/sites/architecture',
+      type: 'SharePoint',
+    });
+    expect(validSharePointUri.success).toBe(true);
+
+    const invalidSharePoint = validateConnectorEndpoint({
+      url: 'https://google.com/search?q=sharepoint',
+      type: 'SharePoint',
+    });
+    expect(invalidSharePoint.success).toBe(false);
+    expect(invalidSharePoint.error).toContain('SharePoint Validation Failed');
   });
 
   it('filters retrieved RAG context chunks by semantic relevance threshold using exported filterKbChunksByRelevance utility', () => {
