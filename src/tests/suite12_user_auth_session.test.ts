@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { DistributedSessionStore } from '../lib/sessionStore';
 
 export interface UserSessionData {
   sessionId: string;
@@ -120,4 +121,37 @@ describe('Suite 12: Backend User Session & SSO/GitHub Auth Governance', () => {
     activeSession = null;
     expect(activeSession).toBeNull();
   });
+
+  it('validates Distributed Session Store token generation and store operations', async () => {
+    const store = new DistributedSessionStore();
+    const token = store.generateSessionToken();
+
+    expect(token).toMatch(/^sess_[a-f0-9]{64}$/); // 256-bit cryptographically secure hex entropy
+
+    const session: any = {
+      sessionId: token,
+      user: {
+        id: 'usr_test_123',
+        email: 'test@distributed.store',
+        name: 'Distributed Tester',
+        provider: 'sso',
+        organization: 'Distributed Corp',
+        targetRepo: 'org/repo',
+        targetBranch: 'main',
+      },
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    };
+
+    await store.setSession(session);
+    const retrieved = await store.getSession(token);
+
+    expect(retrieved).not.toBeNull();
+    expect(retrieved?.user.email).toBe('test@distributed.store');
+
+    await store.destroySession(token);
+    const afterDestroy = await store.getSession(token);
+    expect(afterDestroy).toBeNull();
+  });
 });
+

@@ -1,7 +1,10 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import crypto from "node:crypto";
 import { createServer as createViteServer } from "vite";
+import { sessionStore, DistributedSessionStore, ServerUserSession } from "./src/lib/sessionStore";
+
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const TENANTS_DIR = path.join(DATA_DIR, "tenants");
@@ -144,48 +147,42 @@ async function startServer() {
 
   app.use(express.json());
 
-  // =========================================================================
-  // SERVER-SIDE USER SESSION & SSO / GITHUB / EMAIL AUTHENTICATION
-  // =========================================================================
-  interface ServerUserSession {
-    sessionId: string;
-    user: {
-      id: string;
-      email: string;
-      name: string;
-      avatar?: string;
-      provider: 'sso' | 'github' | 'email';
-      organization: string;
-      ssoDomain?: string;
-      targetRepo: string;
-      targetBranch: string;
-    };
-    createdAt: string;
-    expiresAt: string;
-  }
+  // Security Headers Middleware
+  app.use((req, res, next) => {
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+  });
 
-  const activeServerSessions = new Map<string, ServerUserSession>();
+  // Rate Limiting Middleware for Auth Routes
+  const authRateLimitMap = new Map<string, { count: number; resetTime: number }>();
+  const authRateLimiter = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const now = Date.now();
+    const windowMs = 60 * 1000; // 1 min window
+    const maxRequests = 30; // 30 requests/min
 
-  // Default active session for instant application access
-  const DEFAULT_DEMO_SESSION: ServerUserSession = {
-    sessionId: 'sess-demo-active',
-    user: {
-      id: 'usr-101',
-      email: 'engineer@acmecorp.com',
-      name: 'Jane Doe',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-      provider: 'sso',
-      organization: 'Acme Enterprise',
-      targetRepo: 'autorca-suite/autorca-suite',
-      targetBranch: 'main',
-    },
-    createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    const record = authRateLimitMap.get(clientIp);
+    if (!record || now > record.resetTime) {
+      authRateLimitMap.set(clientIp, { count: 1, resetTime: now + windowMs });
+      return next();
+    }
+
+    record.count += 1;
+    if (record.count > maxRequests) {
+      return res.status(429).json({
+        success: false,
+        error: 'Too many authentication requests. Rate limit exceeded. Please wait 1 minute.',
+      });
+    }
+
+    next();
   };
-  activeServerSessions.set(DEFAULT_DEMO_SESSION.sessionId, DEFAULT_DEMO_SESSION);
 
-  // Parse session token from cookies or Auth header
-  function getSessionFromRequest(req: express.Request): ServerUserSession | null {
+  // Helper: Extract session token from cookie or Authorization header
+  async function getSessionFromRequest(req: express.Request): Promise<ServerUserSession | null> {
     const cookieHeader = req.headers.cookie || '';
     const match = cookieHeader.match(/autorca_session=([^;]+)/);
     const sessionFromCookie = match ? match[1] : null;
@@ -193,32 +190,34 @@ async function startServer() {
     const authHeader = req.headers.authorization || '';
     const sessionFromHeader = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-    const token = sessionFromCookie || sessionFromHeader || 'sess-demo-active';
-    const found = activeServerSessions.get(token);
-    if (found && new Date(found.expiresAt).getTime() > Date.now()) {
-      return found;
-    }
-    return DEFAULT_DEMO_SESSION;
+    const token = sessionFromCookie || sessionFromHeader;
+    if (!token) return null;
+
+    return await sessionStore.getSession(token);
   }
 
-  // GET /api/auth/session - Retrieve active user session
-  app.get("/api/auth/session", (req, res) => {
-    const session = getSessionFromRequest(req);
+  // GET /api/auth/session - Retrieve active user session from Redis/memory store
+  app.get("/api/auth/session", async (req, res) => {
+    const session = await getSessionFromRequest(req);
     return res.json({
       authenticated: !!session,
       session: session || null,
+      store: {
+        type: sessionStore.isRedisActive() ? 'redis' : 'memory-lru',
+        distributed: sessionStore.isRedisActive(),
+      },
     });
   });
 
   // POST /api/auth/login - Establish new user session (SSO, GitHub, Email)
-  app.post("/api/auth/login", (req, res) => {
+  app.post("/api/auth/login", authRateLimiter, async (req, res) => {
     const { provider = 'sso', email, name, organization, targetRepo, targetBranch } = req.body || {};
 
     if (!email || typeof email !== 'string') {
       return res.status(400).json({ success: false, error: 'Valid user email address is required.' });
     }
 
-    const sessionId = `sess-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const sessionId = sessionStore.generateSessionToken();
     const cleanEmail = email.trim().toLowerCase();
     const displayName = name ? name.trim() : cleanEmail.split('@')[0];
     const userOrg = organization ? organization.trim() : 'Enterprise Workspace';
@@ -226,7 +225,7 @@ async function startServer() {
     const newSession: ServerUserSession = {
       sessionId,
       user: {
-        id: `usr-${Date.now()}`,
+        id: `usr_${crypto.randomBytes(8).toString('hex')}`,
         email: cleanEmail,
         name: displayName,
         provider: provider as 'sso' | 'github' | 'email',
@@ -238,39 +237,42 @@ async function startServer() {
       expiresAt: new Date(Date.now() + 86400000).toISOString(),
     };
 
-    activeServerSessions.set(sessionId, newSession);
+    await sessionStore.setSession(newSession, 86400);
 
+    const isProd = process.env.NODE_ENV === 'production';
     res.setHeader(
       'Set-Cookie',
-      `autorca_session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=86400`
+      `autorca_session=${sessionId}; Path=/; HttpOnly; ${isProd ? 'Secure;' : ''} SameSite=Lax; Max-Age=86400`
     );
 
     return res.json({
       success: true,
-      message: 'User session successfully established.',
+      message: 'User session successfully established in distributed session store.',
       session: newSession,
+      storeType: sessionStore.isRedisActive() ? 'redis' : 'memory-lru',
     });
   });
 
   // POST /api/auth/logout - Invalidate user session
-  app.post("/api/auth/logout", (req, res) => {
-    const session = getSessionFromRequest(req);
-    if (session && session.sessionId !== 'sess-demo-active') {
-      activeServerSessions.delete(session.sessionId);
+  app.post("/api/auth/logout", async (req, res) => {
+    const session = await getSessionFromRequest(req);
+    if (session) {
+      await sessionStore.destroySession(session.sessionId);
     }
+    const isProd = process.env.NODE_ENV === 'production';
     res.setHeader(
       'Set-Cookie',
-      'autorca_session=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0'
+      `autorca_session=; Path=/; HttpOnly; ${isProd ? 'Secure;' : ''} SameSite=Lax; Max-Age=0`
     );
     return res.json({
       success: true,
-      message: 'Logged out successfully.',
+      message: 'Logged out successfully. Session revoked from backend store.',
     });
   });
 
   // POST /api/user/workspace - Update user session target repository settings
-  app.post("/api/user/workspace", (req, res) => {
-    const session = getSessionFromRequest(req);
+  app.post("/api/user/workspace", async (req, res) => {
+    const session = await getSessionFromRequest(req);
     if (!session) {
       return res.status(401).json({ success: false, error: 'Unauthorized: Active user session required.' });
     }
@@ -279,9 +281,11 @@ async function startServer() {
     if (targetRepo) session.user.targetRepo = targetRepo.trim();
     if (targetBranch) session.user.targetBranch = targetBranch.trim();
 
+    await sessionStore.setSession(session, 86400);
+
     return res.json({
       success: true,
-      message: 'User target repository workspace updated.',
+      message: 'User target repository workspace updated in distributed store.',
       session,
     });
   });
