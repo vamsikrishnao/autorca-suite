@@ -87,13 +87,17 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Organization & Project Context Badge */}
-        <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
-          <Building2 className="w-3.5 h-3.5 text-indigo-600" />
-          <span>Acme Corp</span>
+        {/* Organization & Project Context Badge - Always visible on all screens */}
+        <div className="flex items-center gap-2 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shrink-0">
+          <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+          <span className="font-mono text-[11px]">
+            {tenantContext.tenantId === 'org-acme-corp' ? 'Acme Corp' : tenantContext.tenantId}
+          </span>
           <span className="text-slate-300">•</span>
-          <FolderGit2 className="w-3.5 h-3.5 text-emerald-600" />
-          <span>autorca-suite</span>
+          <FolderGit2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <span className="font-mono text-[11px]">
+            {tenantContext.projectId === 'proj-autorca-suite' ? 'autorca-suite' : tenantContext.projectId}
+          </span>
         </div>
 
         {/* Right Session Token Burn & Harness Action */}
