@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SiemAuditEvent } from '../types';
-import { formatCef, getSiemStatusBadgeClass } from '../utils/audit';
+import { formatCef, getSiemStatusBadgeClass, generateAuditChecksum, createSiemAuditEvent } from '../utils/audit';
 
 describe('Suite 9: Enterprise SIEM Audit Pipeline & Cryptographic Logs (Targeted High-Impact Functional Unit Tests)', () => {
   const sampleAuditEvents: SiemAuditEvent[] = [
@@ -112,5 +112,16 @@ describe('Suite 9: Enterprise SIEM Audit Pipeline & Cryptographic Logs (Targeted
 
     expect(retainedEvents.map((e) => e.id)).not.toContain('AUDIT-OLD');
     expect(retainedEvents.length).toBe(3);
+  });
+
+  it('generates cryptographic checksum and creates SIEM audit event with defaults', () => {
+    const checksum = generateAuditChecksum('org-acme-corp', 'TEST_ACTION', 'BUG-123');
+    expect(checksum).toContain('sha256-');
+
+    const created = createSiemAuditEvent({});
+    expect(created.id).toContain('AUDIT-');
+    expect(created.tenantId).toBe('org-acme-corp');
+    expect(created.status).toBe('SUCCESS');
+    expect(created.checksum).toContain('sha256-');
   });
 });

@@ -1,0 +1,14 @@
+{
+  "name": "@autorca/sdk",
+  "version": "1.0.0",
+  "description": "AutoRCA Lightweight Plug-and-Play Client SDK for Node.js & TypeScript",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": ["autorca", "rca", "root-cause-analysis", "automated-bug-fix", "sentry", "error-monitoring"],
+  "author": "AutoRCA Open Source",
+  "license": "MIT",
+  "dependencies": {}
+}

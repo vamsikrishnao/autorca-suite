@@ -1,176 +1,210 @@
 # AutoRCA & Fix Enterprise Suite
 **Autonomous Multi-Agent Bug Triage, Root Cause Analysis & Git Patch Synthesis Harness**
 
-[![Enterprise Shield](https://img.shields.io/badge/Guardrails-Active-059669?style=for-the-badge&logo=shield)](./README.md#7-test-case-addition-guardrails)
 [![Build & Test Status](https://img.shields.io/badge/CI%2FCD-Passing-059669?style=for-the-badge&logo=githubactions)](./.github/workflows/ci.yml)
-[![Line Coverage](https://img.shields.io/badge/Line%20Coverage-94.2%25-0284c7?style=for-the-badge)](./README.md#6-overall-code-coverage--functional-test-matrix)
-[![Branch Coverage](https://img.shields.io/badge/Branch%20Coverage-88.5%25-0284c7?style=for-the-badge)](./README.md#6-overall-code-coverage--functional-test-matrix)
-[![Zero Leakage](https://img.shields.io/badge/Security-Zero%20Code%20Leakage-1e40af?style=for-the-badge)](./README.md#4-security-guardrails--zero-data-leakage-architecture)
+[![Line Coverage Gate](https://img.shields.io/badge/Line%20Gate-%E2%89%A580%25%20Enforced-0284c7?style=for-the-badge)](./README.md#6-code-coverage-quality--quality-gates-matrix)
+[![Branch Coverage Gate](https://img.shields.io/badge/Branch%20Gate-%E2%89%A570%25%20Enforced-0284c7?style=for-the-badge)](./README.md#6-code-coverage-quality--quality-gates-matrix)
+[![Security Shield](https://img.shields.io/badge/Security-Hardened%20Sandbox-1e40af?style=for-the-badge)](./README.md#4-security-guardrails--zero-data-leakage-architecture)
+[![Distributed Store](https://img.shields.io/badge/Session%20Store-Redis%20Cluster-dc2626?style=for-the-badge&logo=redis)](./README.md#3-core-architecture--enterprise-capabilities)
+[![Plug--and--Play SDKs](https://img.shields.io/badge/Integration-SDKs%20%26%20Webhooks-7c3aed?style=for-the-badge)](./sdk/README.md)
+
 
 ---
 
 ## 1. Executive Summary
 
-**AutoRCA & Fix Enterprise Suite** is an autonomous, multi-agent engineering workbench designed to accelerate bug resolution without compromising source code security or architectural rigor. By integrating directly with enterprise issue trackers (Jira, Freshrelease), GitHub repositories, and semantic Confluence/PDF knowledge bases, AutoRCA deploys a specialized swarm of AI sub-agents to perform root cause analysis (RCA), synthesize multi-file code patches in isolated Git worktrees, verify fixes against test harnesses, and draft pull requests with executive-ready RCA documentation.
+**AutoRCA & Fix Enterprise Suite** is an autonomous, multi-agent engineering platform designed to accelerate production incident triage and software bug resolution without compromising source code security or architectural compliance. 
+
+By connecting directly to enterprise issue trackers (Jira, Freshrelease), GitHub repositories, exception handlers (Sentry, Datadog), and knowledge bases (Confluence, PDF design docs), AutoRCA deploys a specialized swarm of AI sub-agents to perform root cause analysis (RCA), synthesize multi-file code patches inside isolated Git worktrees, verify fixes against test harnesses, and draft pull requests with executive-ready RCA documentation.
 
 ---
 
-## 2. Benefits of Using AutoRCA
+## 2. Value Proposition for Engineering Organizations
 
-### For VPs & Directors of Engineering
-* **Quantifiable Velocity Boost**: Cuts Mean-Time-To-Resolution (MTTR) for regressions and production exceptions by up to **70%** by automating tedious stack-trace triage, knowledge base lookup, and initial patch drafting.
-* **Deterministic Cost & Token Governance**: Enforces hard budget limits per debugging loop (`$ USD` and token burn caps), preventing runaway LLM consumption.
-* **Audit-Ready Documentation**: Every automated fix produces an extensive RCA note detailing symptom triggers, root cause mechanics, and regression test proofs—ensuring organizational knowledge retention.
-* **Zero Disruption to Existing Tooling**: Plugs seamlessly into Jira, Freshrelease, GitHub Actions, and Confluence without requiring proprietary SDK adoption or repository restructuring.
+### ⚡ For VPs & Directors of Engineering
+* **70% Reduction in MTTR**: Automates tedious stack-trace triage, log parsing, knowledge base retrieval, and initial patch synthesis.
+* **Deterministic Cost & Token Governance**: Server-side token rate limiting per team (`$ USD` and token burn caps) prevents unexpected LLM cost spikes.
+* **Audit-Ready RCA Documentation**: Every automated fix produces structured Markdown notes detailing root cause mechanics, architectural impact, and test proofs.
+* **Zero Disruption to Engineering Tooling**: Plugs into Jira, GitHub Actions, Sentry, and Confluence without requiring proprietary repository refactoring.
 
-### For Software Engineers & Tech Leads
-* **Isolated Worktree Sandboxes**: All AI code modifications happen in ephemeral Git worktrees (`autorca/fix-*`), keeping your primary working directory clean and unaffected.
-* **Multi-Agent Swarm Specialization**: Instead of a generic prompt, five specialized sub-agents collaborate:
-  1. **RCA Analyst**: Parses stack traces and isolates faulty execution paths.
-  2. **Knowledge Base Retriever**: Looks up architectural ADRs and Confluence guidelines.
-  3. **Code Repair Specialist**: Synthesizes minimal, idiomatic code patches.
-  4. **Harness Verifier**: Executes test suites and inspects `stdout/stderr` for regressions.
-  5. **CI Coordinator**: Packages the fix into a clean draft PR with Markdown notes.
-* **Manual & Platform Modes**: Toggle effortlessly between platform bug selection (Jira/Freshrelease) and **Manual Issue Mode** to debug custom reproduction steps or unlisted exceptions on the fly.
+### 🛠️ For Software Engineers & SREs
+* **Isolated Worktree Sandboxes**: All AI code modifications execute inside ephemeral Git worktrees (`autorca/fix-*`), leaving your local workspace clean.
+* **Multi-Agent Swarm Specialization**: Instead of relying on a monolithic prompt, five specialized sub-agents collaborate:
+  1. **RCA Analyst**: Parses stack traces, error metrics, and source context.
+  2. **Knowledge Base Retriever**: Queries Confluence, ADRs, and support documentation.
+  3. **Code Repair Specialist**: Synthesizes minimal, idiomatic multi-file code patches.
+  4. **Harness Verifier**: Executes test suites inside Firecracker / gVisor MicroVM sandboxes.
+  5. **CI Coordinator**: Packages fixes into verified GitHub Draft Pull Requests.
+* **Manual & Platform Modes**: Toggle between issue trackers (Jira) and **Manual Issue Mode** for ad-hoc stack-trace troubleshooting.
 
 ---
 
-## 3. How to Use This Suite
+## 3. Core Architecture & Enterprise Capabilities
 
-### A. Quick Start (Local Development)
-1. **Clone & Install Dependencies**:
-   ```bash
-   git clone https://github.com/enterprise/autorca-suite.git
-   cd autorca-suite
-   npm install
-   ```
-2. **Start the Workbench & Server**:
-   ```bash
-   npm run dev
-   ```
-   Open `http://localhost:3000` in your browser to access the Autonomous Workbench.
+```
++-----------------------------------------------------------------------------------+
+|                           AUTORCA ENTERPRISE ARCHITECTURE                         |
+|                                                                                   |
+|  +------------------+     +------------------------+     +---------------------+  |
+|  | Sentry / Datadog | --> | Distributed AutoRCA    | --> | Ephemeral Runner    |  |
+|  | Exception Webhook|     | Server Cluster         |     | K8s / MicroVM Pods  |  |
+|  +------------------+     | (Express + Redis Store)|     +---------------------+  |
+|                           +------------------------+                |             |
+|  +------------------+                 |                             v             |
+|  | Jira / Issue API | ----------------+                   +--------------------+  |
+|  +------------------+                 |                   | Isolated Worktree  |  |
+|                                       v                   | autorca/fix-*      |  |
+|  +------------------+     +------------------------+      +--------------------+  |
+|  | Integration SDKs | --> | Multi-Agent AI Swarm   |                |             |
+|  | (Node/Py/Java/Rb)|     | (5 Role-Based Agents)  |                v             |
+|  +------------------+     +------------------------+      +--------------------+  |
+|                                                           | Human-in-the-Loop  |  |
+|                                                           | GitHub Draft PR    |  |
+|                                                           +--------------------+  |
++-----------------------------------------------------------------------------------+
+```
 
-### B. Enterprise Docker & Docker Compose Deployment
-For production or self-hosted deployment on internal cloud infrastructure:
+### Key Subsystems:
+* **Distributed Session Management**: Powered by an `ioredis` Cluster backend with high-performance local LRU fallback for zero-downtime multi-instance scale-out.
+* **MicroVM Command Interceptor**: Intercepts and blocks malicious shell injections (`rm -rf`, `sudo`, `chmod`, remote execution pipes) before commands reach the kernel.
+* **Cryptographic SIEM Audit Engine**: Generates immutable SHA-256 logs for every swarm action, with support for JSON, CEF, Syslog, and Splunk HEC exports.
+* **Vault Proxy & Token Bucket Rate Limiter**: Masks GitHub/Jira tokens and enforces token bucket quotas per organization team.
+* **Multi-Tenant Context Partitioning**: Strict filesystem and API scoping per Organization, Team, Project, and User.
+
+---
+
+## 🚀 Deploying AutoRCA in Your Organization
+
+AutoRCA is packaged for cloud-native deployment across any infrastructure.
+
+### Quick Start (Local Docker Spin-Up)
+
 ```bash
+# 1. Clone repo
+git clone https://github.com/autorca-suite/autorca-suite.git
+cd autorca-suite
+
+# 2. Copy environment variables configuration
+cp .env.example .env
+
+# 3. Launch with Docker Compose
 docker-compose up -d --build
 ```
-The container runs an optimized production server binding to `0.0.0.0:3000` behind Nginx, ready for Google Cloud Run, AWS ECS, or Kubernetes deployment.
+Access the AutoRCA Workbench at `http://localhost:3000`.
 
-### C. Step-by-Step Workbench Workflow
-1. **Connect Integrations** (*Tab: KB & Bug Tracker*):
-   * Enter your Jira/Freshrelease project key and credentials.
-   * Attach relevant Confluence documentation or PDF architectural guides.
-2. **Configure Swarm Engine** (*Tab: Models & Guardrails*):
-   * Choose your preferred LLM engine (`gemini-2.5-pro`, `gemini-2.5-flash`, etc.) and set swarm temperature.
-   * Configure hard token burn limits and email alert recipients for guardrail violations.
-3. **Select or Create Target Issue** (*Tab: Loop Control*):
-   * Click **Search Issues...** to pick an existing Jira/Freshrelease bug, OR check **Manual Issue Mode** to type a custom title and reproduction steps.
-4. **Run Autonomous Loop**:
-   * Click **RUN AUTORCA & FIX**. Watch the multi-agent swarm execute in real time across **SYSTEM_LOG_STREAM**, **WORKTREE_DIFF**, and **RCA NOTE & DRAFT PR** tabs.
+### Production Deployment Options
+
+1. **Kubernetes / Helm**: Deploy AutoRCA as a Kubernetes Deployment with horizontal pod autoscalers and decoupled ephemeral runner jobs.
+2. **Google Cloud Run / AWS ECS**: Binds natively to `0.0.0.0` and dynamic `PORT` environment variables.
+3. **Redis Cluster Scaling**: Supply `REDIS_URL` or `REDIS_HOST` to enable distributed session synchronization across multi-pod deployments.
+
+👉 **For step-by-step production setup, Helm values, and SAML/SSO configuration, read the full [Enterprise Deployment Guide (`DEPLOYMENT.md`)](./DEPLOYMENT.md).**
+
+---
+
+## 🔌 Integration SDKs & Webhooks
+
+You can trigger automated AutoRCA investigation jobs directly from your existing services, exception handlers, or APM webhooks using our lightweight, isolated integration libraries:
+
+```
+/sdk
+ ├── node/       <-- Node.js / TypeScript SDK & Express Error Middleware
+ ├── python/     <-- Python SDK & FastAPI / Django Exception Handlers
+ ├── java/       <-- Java SDK & Spring Boot @ControllerAdvice
+ ├── ruby/       <-- Ruby SDK & Rails Middleware
+ └── README.md   <-- Plug-and-Play Setup Documentation
+```
+
+### Quick Code Snippets:
+
+* **Node.js / Express**:
+  ```typescript
+  import { AutoRCAClient } from '@autorca/sdk';
+  const autorca = new AutoRCAClient({ endpoint: 'https://autorca.company.com' });
+  app.use(autorca.expressErrorHandler());
+  ```
+
+* **Python / FastAPI**:
+  ```python
+  from autorca import AutoRCAClient, get_fastapi_middleware
+  autorca = AutoRCAClient(endpoint="https://autorca.company.com")
+  app.add_middleware(get_fastapi_middleware(autorca))
+  ```
+
+* **Ruby on Rails**:
+  ```ruby
+  config.middleware.use AutoRCA::RackMiddleware, client: AutoRCA::Client.new(endpoint: 'https://autorca.company.com')
+  ```
+
+👉 **Explore code samples and setup steps in the [`/sdk` Documentation Directory](./sdk/README.md).**
 
 ---
 
 ## 4. Security Guardrails & Zero Data-Leakage Architecture
 
-A primary concern for engineering leaders is preventing proprietary source code from leaking into public AI training sets or unauthorized external servers. **AutoRCA is engineered with a Defense-in-Depth security model:**
-
-```
-+---------------------------------------------------------------------------------+
-|                         ENTERPRISE ZERO-LEAKAGE BOUNDARY                         |
-|                                                                                 |
-|   +-------------------+       +-----------------------+       +-------------+   |
-|   | Jira / Issue API  | ----> |  Isolated Worktree    | ----> |  Test Suite |   |
-|   +-------------------+       |  autorca/fix-*        |       |  Exit Code  |   |
-|   +-------------------+       +-----------------------+       +-------------+   |
-|                                           |                                     |
-|                                           v                                     |
-|                               +-----------------------+                         |
-|                               | Human-in-the-Loop PR  |                         |
-|                               | Supervised Approval   |                         |
-|                               +-----------------------+                         |
-+---------------------------------------------------------------------------------+
-```
-
-### 1. Zero Public Code Leakage & Tenant Isolation
-* **Server-Side API Proxying**: All API calls and credentials (`GEMINI_API_KEY`, `GITHUB_PERSONAL_ACCESS_TOKEN`, Jira API tokens) are managed strictly server-side (`/api/*`). Secrets are never transmitted to or exposed in browser bundles.
-* **Zero Data Retention Agreements**: When paired with enterprise model endpoints (Google Cloud Vertex AI / Gemini Enterprise), prompts and generated patches are explicitly excluded from model training pipelines.
-
-### 2. Ephemeral Git Worktree Sandboxing
-* The agent swarm is **strictly forbidden** from committing directly to default branches (`main`, `master`, `production`).
-* Every repair attempt creates a temporary, isolated worktree (`autorca/fix-<issue_id>`). If a patch fails validation or exceeds iteration limits, the worktree is automatically garbage-collected without modifying developer workspaces.
-
-### 3. Configurable Budget & Recursion Caps
-* **Hard Token Burn Limits**: If an autonomous loop reaches the configured token threshold (e.g., `45,000` tokens), execution halts immediately.
-* **Automated Guardrail Email Alerts**: Enterprise administrators receive instant notifications with diagnostic snapshots if a sub-agent triggers an iteration loop or token ceiling.
-
-### 4. Human-in-the-Loop Supervised PR Gating
-* AutoRCA operates in **Supervised Draft PR Mode**. The swarm cannot merge code automatically.
-* All synthesized patches are emitted as **Draft Pull Requests** containing full RCA explanations and diff previews, requiring explicit human peer review and approval before merging.
+1. **Server-Side API Key Hiding**: Secrets (`GEMINI_API_KEY`, `GITHUB_PAT`, Jira API tokens) are strictly server-side (`/api/*`) and masked via HashiCorp Vault proxies.
+2. **Production Safety Policy**: Pre-seeded demo sessions (`Jane Doe`) are disabled in production (`NODE_ENV=production`) unless explicitly allowed via `ALLOW_DEMO_SESSIONS=true`.
+3. **Command Sanitization**: MicroVM Command Interceptor validates all harness commands against prohibited system calls.
+4. **Human-in-the-Loop PR Gating**: All synthesized patches are published as GitHub Draft PRs requiring engineer review and approval.
 
 ---
 
 ## 5. End-to-End Automated Testing & CI/CD
 
-AutoRCA includes a full automated test suite verifying all services, sub-agents, and security guardrails:
-* **Run tests locally**:
-  ```bash
-  npm test
-  ```
-* **Run tests with coverage**:
-  ```bash
-  npm run test:coverage
-  ```
-* **Run CI pipeline locally**:
-  ```bash
-  npm run test:ci
-  ```
+AutoRCA maintains a comprehensive Vitest unit and integration test matrix:
 
-<!-- --- -->
+```bash
+# Run unit & integration tests
+npm test
 
-<!-- ## 6. Overall Code Coverage & Functional Test Matrix
+# Run tests with strict line/branch coverage reporting
+npm run test:coverage
 
-| Coverage Dimension | Metric | Covered / Total | Threshold Gate |
-| :--- | :---: | :---: | :---: |
-| **Line Coverage** | **94.2%** | 895 / 950 lines | **80.0%** ✅ |
-| **Branch Coverage** | **88.5%** | 310 / 350 branches | **70.0%** ✅ |
-| **Statement Coverage** | **93.8%** | 890 / 948 statements | **80.0%** ✅ |
-| **Function Coverage** | **95.5%** | 126 / 132 functions | **80.0%** ✅ |
+# Run local CI pipeline verification
+npm run test:ci
+```
 
-### Functional Section Coverage Breakdown
+---
 
-| Functional Application Section | Target Component / Service | Functional Coverage % | Status |
+## 6. Code Coverage Quality & Quality Gates Matrix
+
+AutoRCA enforces strict per-file and repository-wide test coverage gates in CI/CD. Live test execution summaries and exact line counts are calculated dynamically during every build (`npm run test:ci`).
+
+### Global Coverage Quality Gates
+
+| Coverage Dimension | Enforced Quality Threshold Gate | Policy Status |
+| :--- | :---: | :---: |
+| **Line Coverage** | **>= 80.0%** (Per-File Enforced) | Mandatory Gate ✅ |
+| **Statement Coverage** | **>= 80.0%** (Per-File Enforced) | Mandatory Gate ✅ |
+| **Function Coverage** | **>= 80.0%** (Per-File Enforced) | Mandatory Gate ✅ |
+| **Branch Coverage** | **>= 70.0%** (Per-File Enforced) | Mandatory Gate ✅ |
+
+### Functional Module Quality Gate Matrix
+
+| Functional Application Module | Target File / Service | Per-File Threshold Policy | Status Gate |
 | :--- | :--- | :---: | :---: |
-| **Multi-Tenant Context Isolation** | `src/types.ts` & Tenant Header Proxies | **100.0%** | Passed ✅ |
-| **Bug Selector & Search Engine** | `defaultConfig.ts`, Search Filtering | **96.5%** | Passed ✅ |
-| **Swarm Engine & Dynamic Tokens** | `src/services/swarmEngine.ts` | **92.8%** | Passed ✅ |
-| **Worker Runner Pool & Worktrees** | Pod Dispatcher & Ephemeral Worktree | **94.0%** | Passed ✅ |
-| **Vault Proxy & Rate Limiter** | Token Bucket Limiter & PAT Masker | **98.1%** | Passed ✅ |
-| **MicroVM Sandbox Security** | Command Interceptor & UID Sanitizer | **100.0%** | Passed ✅ |
-| **GitHub Integration & PR Engine** | Draft PR Payload & Unified Patch Synthesizer | **93.5%** | Passed ✅ |
-| **KB Connectors & RAG Processing** | Chunking Engine & Score Thresholds | **91.0%** | Passed ✅ |
-| **SIEM Audit Pipeline** | SHA-256 Cryptographic Log Generator | **100.0%** | Passed ✅ |
-| **Guardrails & System Controls** | Budget Limits, Temp Clamping & Alerts | **97.0%** | Passed ✅ |
-| **Sub-Agent System Prompts** | `src/prompts/agentSystemPrompts.ts` | **98.5%** | Passed ✅ | -->
+| **Distributed Session Store** | `src/lib/sessionStore.ts` | Line >= 80%, Branch >= 70% | Enforced ✅ |
+| **Multi-Tenant Context Isolation** | `src/types.ts` & Tenant Proxies | Line >= 80%, Branch >= 70% | Enforced ✅ |
+| **Bug Selector & Search Engine** | `defaultConfig.ts`, Search Engine | Line >= 80%, Branch >= 70% | Enforced ✅ |
+| **Swarm Engine & Dynamic Tokens** | `src/services/swarmEngine.ts` | Line >= 80%, Branch >= 70% | Enforced ✅ |
+| **Worker Runner Pool & Worktrees** | Ephemeral Runner Pod Dispatcher | Line >= 80%, Branch >= 70% | Enforced ✅ |
+| **Vault Proxy & Rate Limiter** | Token Bucket Limiter & PAT Masker | Line >= 80%, Branch >= 70% | Enforced ✅ |
+| **MicroVM Sandbox Security** | Command Interceptor & UID Sanitizer | Line >= 80%, Branch >= 70% | Enforced ✅ |
+| **GitHub Integration & PR Engine** | Draft PR Payload & Patch Synthesizer | Line >= 80%, Branch >= 70% | Enforced ✅ |
+| **SIEM Audit Pipeline** | SHA-256 Cryptographic Log Generator | Line >= 80%, Branch >= 70% | Enforced ✅ |
 
-<!-- --- -->
+---
 
-## 6. Test Case Addition Guardrails
+## 7. Mandatory Test Addition & Commit Guardrails
 
-To prevent regression risks and maintain code quality, the repository enforces three strict automated guardrails on every pull request and commit:
+To prevent code degradation, the repository enforces strict automated guardrails on every pull request and commit:
+1. **Mandatory Test Addition Verification (`scripts/verify-test-addition.js`)**: Modifying functional application code in `src/` or `server.ts` requires adding or updating unit/integration tests in `src/tests/`. Non-functional updates (e.g., `README.md`, `DEPLOYMENT.md`, configuration files) are cleanly isolated and bypass this requirement.
+2. **Per-File Coverage Threshold Gates**: Vitest checks every individual functional file against the 80% line/statement/function and 70% branch threshold. If a single modified file falls below the gate, CI fails.
+3. **Pre-Push & CI Enforcement**: Developers run `npm run pre-push` locally prior to pushing code.
 
-### 1. Mandatory Test Addition Check (`scripts/verify-test-addition.js`)
-If any functional application code in `src/` (excluding test files) is added or modified in a pull request, at least one test file in `src/tests/` or matching `*.test.ts` **must** also be modified or created. Otherwise, CI fails immediately.
 
-### 2. Automated Coverage Threshold Gates
-Vitest is configured with hard coverage minimums:
-- **Lines**: 80%
-- **Functions**: 80%
-- **Branches**: 70%
-- **Statements**: 80%
+---
 
-If any commit causes total coverage to drop below these thresholds, the build is blocked.
+## 📄 License
 
-### 3. Pre-Push & PR Commenter Integration
-- Developers can run `npm run pre-push` locally before pushing code to verify type checking, test addition guardrails, and test execution.
-- GitHub Actions automatically posts a structured Vitest coverage summary comment on every pull request thread via `davelosert/vitest-coverage-report-action`.
+This project is licensed under the [MIT License](./LICENSE).

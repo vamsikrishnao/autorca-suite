@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { maskSecretToken, checkRateLimit, validatePatToken } from '../utils/connectors';
+import { maskSecretToken, checkRateLimit, validatePatToken, validateConnectorEndpoint } from '../utils/connectors';
+import { getSiemStatusBadgeClass } from '../utils/audit';
 
 describe('Suite 5: API & Secret Governance, Vault Proxy & Rate Limiter (Targeted High-Impact Functional Unit Tests)', () => {
   it('masks GitHub Personal Access Tokens safely for UI display using exported maskSecretToken utility', () => {
@@ -101,5 +102,24 @@ describe('Suite 5: API & Secret Governance, Vault Proxy & Rate Limiter (Targeted
     expect(vaultStore.get('jira:api_token')).toBe('jira_secret_val');
     expect(vaultStore.get('gemini:api_key')).toBe('gemini_secret_val');
     expect(vaultStore.get('github:api_key')).toBeUndefined();
+  });
+
+  it('validates connector endpoints for Confluence, SharePoint, and Jira', () => {
+    expect(validateConnectorEndpoint({}).success).toBe(false);
+    expect(validateConnectorEndpoint({ type: 'Confluence', url: 'invalid-url' }).success).toBe(false);
+    expect(validateConnectorEndpoint({ type: 'Confluence', url: 'https://otherdomain.com' }).success).toBe(false);
+    expect(validateConnectorEndpoint({ type: 'Confluence', url: 'https://myorg.atlassian.net/wiki' }).success).toBe(true);
+
+    expect(validateConnectorEndpoint({ type: 'SharePoint', url: 'http://invalid.com' }).success).toBe(false);
+    expect(validateConnectorEndpoint({ type: 'SharePoint', url: 'https://myorg.sharepoint.com/sites/dev' }).success).toBe(true);
+
+    expect(validateConnectorEndpoint({ platform: 'Jira', url: 'https://jira.com' }).success).toBe(false);
+    expect(validateConnectorEndpoint({ platform: 'Jira', url: 'https://myorg.atlassian.net', apiKeyOrToken: 'short' }).success).toBe(false);
+    expect(validateConnectorEndpoint({ platform: 'Jira', url: 'https://myorg.atlassian.net', apiKeyOrToken: 'valid-long-token-123' }).success).toBe(true);
+
+    expect(getSiemStatusBadgeClass('SUCCESS')).toContain('emerald');
+    expect(getSiemStatusBadgeClass('FAILED')).toContain('rose');
+    expect(getSiemStatusBadgeClass('ALERT')).toContain('amber');
+    expect(getSiemStatusBadgeClass('UNKNOWN')).toContain('slate');
   });
 });

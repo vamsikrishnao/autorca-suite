@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { DistributedSessionStore } from '../lib/sessionStore';
 
 export interface UserSessionData {
@@ -122,7 +122,7 @@ describe('Suite 12: Backend User Session & SSO/GitHub Auth Governance', () => {
     expect(activeSession).toBeNull();
   });
 
-  it('validates Distributed Session Store token generation and store operations', async () => {
+  it('validates Distributed Session Store token generation, retrieval, and store operations', async () => {
     const store = new DistributedSessionStore();
     const token = store.generateSessionToken();
 
@@ -144,14 +144,67 @@ describe('Suite 12: Backend User Session & SSO/GitHub Auth Governance', () => {
     };
 
     await store.setSession(session);
-    const retrieved = await store.getSession(token);
 
+    const retrieved = await store.getSession(token);
     expect(retrieved).not.toBeNull();
     expect(retrieved?.user.email).toBe('test@distributed.store');
+
+    expect(store.isRedisActive()).toBe(false);
 
     await store.destroySession(token);
     const afterDestroy = await store.getSession(token);
     expect(afterDestroy).toBeNull();
+  });
+
+  it('handles expired sessions and null destroy in DistributedSessionStore', async () => {
+    const store = new DistributedSessionStore();
+    const token = store.generateSessionToken();
+    const session: any = {
+      sessionId: token,
+      user: { id: 'u1', email: 'exp@test.com', name: 'Exp' },
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date().toISOString(),
+    };
+
+    await store.setSession(session, -100); // Expired immediately
+    const retrieved = await store.getSession(token);
+    expect(retrieved).toBeNull();
+
+    await store.destroySession('');
+  });
+
+  it('exercises Redis cluster integration branches when Redis is active', async () => {
+    const store = new DistributedSessionStore();
+    const token = store.generateSessionToken();
+    const session: any = {
+      sessionId: token,
+      user: { id: 'u2', email: 'redis@test.com', name: 'Redis User' },
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    };
+
+    const redisData = new Map<string, string>();
+    const mockRedis = {
+      get: vi.fn(async (k: string) => redisData.get(k) || null),
+      setex: vi.fn(async (k: string, _ttl: number, val: string) => { redisData.set(k, val); }),
+      expire: vi.fn(async () => {}),
+      del: vi.fn(async (k: string) => { redisData.delete(k); }),
+    };
+
+    (store as any).useRedis = true;
+    (store as any).redisClient = mockRedis;
+
+    expect(store.isRedisActive()).toBe(true);
+
+    await store.setSession(session);
+    expect(mockRedis.setex).toHaveBeenCalled();
+
+    const retrieved = await store.getSession(token);
+    expect(retrieved?.user.email).toBe('redis@test.com');
+    expect(mockRedis.get).toHaveBeenCalled();
+
+    await store.destroySession(token);
+    expect(mockRedis.del).toHaveBeenCalled();
   });
 });
 
